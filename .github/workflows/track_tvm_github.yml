@@ -6,6 +6,10 @@
 name: Mark stale issues and pull requests
 
 on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
   schedule:
   - cron: '36 6 * * *'
 
@@ -35,5 +39,5 @@ jobs:
         # whether or not you want the output to be verbose. Defaults to false
         verbose: false
         # whether or not you want to transfer tags. Defaults to false
-        tags: fale
+        tags: false
          
