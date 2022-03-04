@@ -22,8 +22,8 @@
 [Community](https://tvm.apache.org/community) |
 [Release Notes](NEWS.md)
 
-[![Track latest TVM](https://github.com/nnfusion/tvm/actions/workflows/track_tvm_github.yml/badge.svg?branch=develop)](https://github.com/nnfusion/tvm/actions/workflows/track_tvm_github.yml)
-[![DirectX support](https://github.com/nnfusion/tvm/actions/workflows/directx_build.yml/badge.svg?branch=develop)](https://github.com/nnfusion/tvm/actions/workflows/directx_build.yml)
+[![Track latest TVM commit from Github](https://github.com/nnfusion/tvm/actions/workflows/track_tvm_github.yml/badge.svg)](https://github.com/nnfusion/tvm/actions/workflows/track_tvm_github.yml)
+[![Track latest TVM commit from Github](https://github.com/nnfusion/tvm/actions/workflows/track_tvm_github.yml/badge.svg)](https://github.com/nnfusion/tvm/actions/workflows/track_tvm_github.yml)
 [![WinMacBuild](https://github.com/nnfusion/tvm/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/nnfusion/tvm/actions/workflows/main.yml)
 
 Apache TVM is a compiler stack for deep learning systems. It is designed to close the gap between the
