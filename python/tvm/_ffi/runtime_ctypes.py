@@ -210,6 +210,10 @@ class Device(ctypes.Structure):
         12: "ext_dev",
         14: "hexagon",
         15: "webgpu",
+        20: "directx",
+        21: "directx_host",
+        22: "directx_upload",
+        23: "directx_readback",
     }
     STR2MASK = {
         "llvm": 1,
@@ -232,6 +236,10 @@ class Device(ctypes.Structure):
         "ext_dev": 12,
         "hexagon": 14,
         "webgpu": 15,
+        "directx": 20,
+        "directx_host": 21,
+        "directx_upload": 22,
+        "directx_readback": 23,
     }
 
     def __init__(self, device_type, device_id):

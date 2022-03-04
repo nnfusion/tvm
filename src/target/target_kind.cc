@@ -329,6 +329,11 @@ TVM_REGISTER_TARGET_KIND("metal", kDLMetal)
     .add_attr_option<Integer>("max_function_args", Integer(31))
     .set_default_keys({"metal", "gpu"});
 
+// todo(wenxh): Support DXIL in the future;
+TVM_REGISTER_TARGET_KIND("directx", kDLDirectX)
+    .add_attr_option<Bool>("system-lib")
+    .set_default_keys({"directx", "hlsl", "gpu"});
+
 TVM_REGISTER_TARGET_KIND("vulkan", kDLVulkan)
     .add_attr_option<Bool>("system-lib")
     // Feature support

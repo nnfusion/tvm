@@ -1,0 +1,21 @@
+schedules:
+- cron: "0 0 * * *"
+  displayName: Daily midnight check 
+  branches:
+    include:
+    - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: |
+    git config --global user.email "nnfusion_team@microsoft.com"
+    git config --global user.name "NNFusion team"
+    git config pull.rebase false
+    git checkout origin main
+    git checkout main
+    git remote add tvm https://github.com/apache/tvm.git
+    git pull tvm main
+    git push https://${PAT}:PAT@dev.azure.com/TensorStar/TensorStar/_git/tvm main
+  displayName: 'Add apache/tvm as new origin'

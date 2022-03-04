@@ -16,3 +16,12 @@
 [submodule "3rdparty/cutlass"]
 	path = 3rdparty/cutlass
 	url = https://github.com/NVIDIA/cutlass
+[submodule "3rdparty/DirectXShaderCompiler"]
+	path = 3rdparty/DirectXShaderCompiler
+	url = https://github.com/nnfusion/DirectXShaderCompiler
+[submodule "3rdparty/DirectX-Headers"]
+	path = 3rdparty/DirectX-Headers
+	url = https://github.com/microsoft/DirectX-Headers.git
+[submodule "3rdparty/DirectXTK12"]
+	path = 3rdparty/DirectXTK12
+	url = https://github.com/microsoft/DirectXTK12.git
