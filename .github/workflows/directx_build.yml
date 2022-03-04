@@ -49,4 +49,4 @@ jobs:
       # Build your program with the given configuration
       run: >-
         ${{env.VSDEVCMD}} && 
-        ${{github.workspace}}/build/dx_test.exe
+        ${{github.workspace}}/build/${{env.BUILD_TYPE}}/dx_test.exe
