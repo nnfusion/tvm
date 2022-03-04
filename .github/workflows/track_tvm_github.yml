@@ -1,0 +1,37 @@
+name: Track latest TVM commit from Github
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+  schedule:
+  - cron: '36 6 * * *'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: git-mirror-action
+      # You may pin to the exact commit or the version.
+      # uses: mathisve/git-mirror-action@0e26d87bd1420836e3b68767929c997565c7028f
+      uses: mathisve/git-mirror-action@v1.2
+      with:
+        # url of the repository you want to mirror
+        originalURL: https://github.com/apache/tvm.git
+        # branch in the original repository you want to mirror. Defaults to `master`
+        originalBranch: main
+        # url of the repository you want the mirror to go in
+        mirrorURL: https://github.com/nnfusion/tvm.git
+        # branch that will be created or pushed into. Defaults to `mirror`
+        mirrorBranch: main
+        # Base64 encoded Personal Access Token
+        pat: ${{ secrets.NNFUSION_PAT }}
+        # whether to use the `--force` argument when pushing to the mirror repository. Defaults to false
+        force: false
+        # whether or not you want the output to be verbose. Defaults to false
+        verbose: false
+        # whether or not you want to transfer tags. Defaults to false
+        tags: false
+         
