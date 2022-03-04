@@ -22,7 +22,7 @@
 [Community](https://tvm.apache.org/community) |
 [Release Notes](NEWS.md)
 
-[![Track latest TVM commit from Github](https://github.com/nnfusion/tvm/actions/workflows/track_tvm_github.yml/badge.svg)](https://github.com/nnfusion/tvm/actions/workflows/track_tvm_github.yml)
+[![Build TVM with DirectX support](https://github.com/nnfusion/tvm/actions/workflows/directx_build.yml/badge.svg)](https://github.com/nnfusion/tvm/actions/workflows/directx_build.yml)
 [![Track latest TVM commit from Github](https://github.com/nnfusion/tvm/actions/workflows/track_tvm_github.yml/badge.svg)](https://github.com/nnfusion/tvm/actions/workflows/track_tvm_github.yml)
 [![WinMacBuild](https://github.com/nnfusion/tvm/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/nnfusion/tvm/actions/workflows/main.yml)
 
