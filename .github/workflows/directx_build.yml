@@ -1,4 +1,4 @@
-name: CMake
+name: Build TVM with DirectX support
 
 on:
   push:
