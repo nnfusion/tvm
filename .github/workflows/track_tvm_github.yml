@@ -32,7 +32,7 @@ jobs:
         # branch that will be created or pushed into. Defaults to `mirror`
         mirrorBranch: main
         # Base64 encoded Personal Access Token
-        pat: ${{ secrets.GITHUB_TOKEN }}
+        pat: ${{ secrets.NNFUSION_PAT }}
         # whether to use the `--force` argument when pushing to the mirror repository. Defaults to false
         force: false
         # whether or not you want the output to be verbose. Defaults to false
