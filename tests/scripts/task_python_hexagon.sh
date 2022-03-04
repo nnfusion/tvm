@@ -15,5 +15,14 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-export VTA_HW_PATH=`pwd`/3rdparty/vta-hw
-cd $1 && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo && make $2 && cd ..
+
+set -e
+set -u
+
+source tests/scripts/setup-pytest-env.sh
+
+make cython3
+
+# unset because hardware does not exist in CI.
+unset ANDROID_SERIAL_NUMBER
+run_pytest ctypes python-contrib-hexagon-no-hwardware tests/python/contrib/test_hexagon/test_launcher.py
