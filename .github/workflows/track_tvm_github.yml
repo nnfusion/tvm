@@ -1,0 +1,45 @@
+name: Track latest TVM commit from Github
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+  schedule:
+  - cron: '36 6 * * *'
+
+jobs:
+  test:
+    runs-on: [self-hosted, Linux, X64]
+
+    steps:
+    - name: clean workspace
+      run: rm -rf ${{github.workspace}} && mkdir ${{github.workspace}}
+      
+    - name: git clone tvm
+      run: 
+        git clone https://${{ secrets.PAT }}@github.com/nnfusion/tvm.git ${{github.workspace}}
+    
+    - name: update tvm main
+      working-directory: ${{github.workspace}}
+      run: |
+        git config --global user.email "nnfusion_team@microsoft.com"
+        git config --global user.name "NNFusion team"
+        git config pull.rebase false
+        git checkout main
+        git remote add tvm https://github.com/apache/tvm.git
+        git pull tvm main
+        git push origin main
+        
+    - name: update nnfusion branch
+      working-directory: ${{github.workspace}}
+      run: |
+        git checkout main
+        git branch nnfusion
+        git checkout nnfusion
+        git merge --squash develop
+        git commit -m "Merge develop branch"
+        git push origin nnfusion -f
+        
+    - name: clean workspace after
+      run: rm -rf ${{github.workspace}} && mkdir ${{github.workspace}}

@@ -268,6 +268,14 @@ inline const char* DeviceName(int type) {
       return "webgpu";
     case kDLHexagon:
       return "hexagon";
+    case kDLDirectXUpload:
+      return "directx_upload";
+    case kDLDirectX:
+      return "directx";
+    case kDLDirectXReadback:
+      return "directx_readback";
+    case kDLDirectXHost:
+      return "directx_host";
     default:
       LOG(FATAL) << "unknown type =" << type;
       return "Unknown";
