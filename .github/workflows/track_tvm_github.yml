@@ -1,10 +1,6 @@
 name: Track latest TVM commit from Github
 
 on:
-  push:
-    branches: [ develop ]
-  pull_request:
-    branches: [ develop ]
   schedule:
   - cron: '36 6 * * *'
 
