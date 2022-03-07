@@ -29,7 +29,7 @@ jobs:
         # Base64 encoded Personal Access Token
         pat: ${{ secrets.NNFUSION_PAT }}
         # whether to use the `--force` argument when pushing to the mirror repository. Defaults to false
-        force: false
+        force: true
         # whether or not you want the output to be verbose. Defaults to false
         verbose: false
         # whether or not you want to transfer tags. Defaults to false
