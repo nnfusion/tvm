@@ -31,7 +31,7 @@ jobs:
         # whether to use the `--force` argument when pushing to the mirror repository. Defaults to false
         force: true
         # whether or not you want the output to be verbose. Defaults to false
-        verbose: false
+        verbose: true
         # whether or not you want to transfer tags. Defaults to false
         tags: false
          
