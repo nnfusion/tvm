@@ -31,7 +31,7 @@
   #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
 #endif
 
-#ifndef _WIN32
+#ifdef _WIN32
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxcore.lib")
 #pragma comment(lib, "d3dcompiler.lib")
