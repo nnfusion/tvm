@@ -41,7 +41,7 @@ class DirectComputeKernel {
     return this->_func_descs;
   }
   const std::string get_entry_function() { return this->_entry_function; };
-  static std::string read_from_hlsl_file(const std::wstring& hlsl);
+  static std::string read_from_hlsl_file(const std::string& hlsl);
   static std::string extract_launch_configuration_json(const std::string& ct);
   static void set_launch_configuration_json(const std::string& ct, DirectComputeKernel* _kernel);
 

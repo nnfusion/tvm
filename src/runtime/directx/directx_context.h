@@ -1,7 +1,6 @@
 #pragma once
 
 #include "directx_header.h"
-#include "d3d12sdklayers.h"
 
 namespace tvm {
 namespace runtime {
@@ -32,10 +31,8 @@ class DirectXContext {
         auto pdxdev = std::make_unique<DirectXDevice>(d3d_adapter, _devices.size());
         _devices.push_back(std::move(pdxdev));
       } catch (com_exception e) {
-        if (e.get_result() == DXGI_ERROR_UNSUPPORTED)
-          LOG(INFO) << "DirectX Adapter #" << i << " not supported: cannot create device.";
-        else
-          throw e;
+        LOG(INFO) << "DirectX Adapter #" << i << " not supported: cannot create device.";
+        throw e;
       }
     }
   }
@@ -65,7 +62,7 @@ class DirectXContext {
 
  public:
   DirectXContext() {
-    //enable_debug_layer();
+    // enable_debug_layer();
     update_devices();
   }
 };

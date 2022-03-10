@@ -8,30 +8,37 @@
 #include <sstream>
 #include <vector>
 
-// Necessary headers for directx api:
-// - Those from DirectX-Headers, which is for wsl/win32.
-// #define INITGUID // This is to init all GUID in dxguids.h, use it in one place
-
-#ifdef DX_WSL
+// Thirdparty
+#include "dlpack/dlpack.h"
+#include "dmlc/json.h"
+// Adapter for non-windows
+#ifndef _WIN32
 #include "wsl/winadapter.h"
-#include "wsl/wrladapter.h"
-#else
-#include <wrl/client.h>
 #endif
 
 #include "directx/d3d12.h"
+#include "directx/d3d12sdklayers.h"
 #include "directx/d3dx12.h"
 #include "directx/dxcore.h"
 #include "directx/dxcore_interface.h"
-#include "dmlc/json.h"
 #include "dxguids/dxguids.h"
 
+#ifndef _countof
+  #define _countof(a) (sizeof(a) / sizeof(*(a)))
+#endif
+
+#ifndef ZeroMemory
+  #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
+#endif
+
+/*
 #ifndef DX_WSL
 #include <d3dcompiler.h>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxcore.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 #endif
+*/
 
 // A macro to disallow the copy constructor and operator= functions
 // This should be used in the private: declarations for a class
@@ -42,9 +49,9 @@
 #endif  // !DISALLOW_COPY_AND_ASSIGN
 
 #ifndef _msg_
-#define _msg_(arg)                                                                                 \
-  (std::string(__FILE__) + std::string(":") + std::to_string(__LINE__) + std::string(" throw message - ") + \
-   std::string(arg))
+#define _msg_(arg)                                                       \
+  (std::string(__FILE__) + std::string(":") + std::to_string(__LINE__) + \
+   std::string(" throw message - ") + std::string(arg))
 #endif
 
 // Coding style here is mixed of windows, std c++ and linux
@@ -80,12 +87,12 @@ inline const char* GetErrorString(HRESULT error) {
       return "E_UNEXPECTED";
     case DXGI_ERROR_INVALID_CALL:
       return "DXGI_ERROR_INVALID_CALL";
-    case DXGI_ERROR_NOT_FOUND:
-      return "DXGI_ERROR_NOT_FOUND";
-    case DXGI_ERROR_MORE_DATA:
-      return "DXGI_ERROR_MORE_DATA";
-    case DXGI_ERROR_UNSUPPORTED:
-      return "DXGI_ERROR_UNSUPPORTED";
+    // case DXGI_ERROR_NOT_FOUND:
+    //   return "DXGI_ERROR_NOT_FOUND";
+    // case DXGI_ERROR_MORE_DATA:
+    //   return "DXGI_ERROR_MORE_DATA";
+    // case DXGI_ERROR_UNSUPPORTED:
+    //   return "DXGI_ERROR_UNSUPPORTED";
     case DXGI_ERROR_DEVICE_REMOVED:
       return "DXGI_ERROR_DEVICE_REMOVED";
     case DXGI_ERROR_DEVICE_HUNG:

@@ -4,6 +4,11 @@
 #include "directx_header.h"
 #include "directx_kernel.h"
 
+#ifndef _win32
+//Those for linux/wsl
+#include <sys/eventfd.h>
+#endif
+
 namespace tvm {
 namespace runtime {
 namespace dx {
@@ -71,6 +76,7 @@ class DirectXDevice {
   // Fence waits the singal then trigger event
   // CPU is waiting for the event
   void device_fence_sync() {
+#ifdef _win32
     // Create fence which has frame#0
     ComPtr<ID3D12Fence> fence;
     _dev->CreateFence(_frame, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&fence));
@@ -85,6 +91,23 @@ class DirectXDevice {
     ThrowIfFailed(fence->SetEventOnCompletion(_frame, event));
     auto rv = WaitForSingleObject(event, INFINITE);
     if (rv != WAIT_OBJECT_0) throw std::runtime_error(_msg_("Fence error."));
+#else
+    // Create fence which has frame#0
+    ComPtr<ID3D12Fence> fence;
+    _dev->CreateFence(_frame, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&fence));
+    // Let fench wait for frame + 1
+    _frame++;
+
+    if (fence == nullptr) throw std::runtime_error(_msg_("Cannot create fence."));
+    auto event = eventfd(0, 0);
+    if (event < 0) throw std::runtime_error(_msg_("Event created failed."));
+    // Wait the sign
+    ThrowIfFailed(_cmd_queue->Signal(fence.Get(), _frame));
+    ThrowIfFailed(fence->SetEventOnCompletion(_frame, reinterpret_cast<HANDLE>(event)));
+    eventfd_t count;
+    auto rv = eventfd_read(event, &count);
+    if (rv < 0) throw std::runtime_error(_msg_("Fence error."));
+#endif
   }
 
   std::shared_ptr<DirectDeviceBuffer> device_buffer(UINT64 size, DLDataType type) {
@@ -93,10 +116,14 @@ class DirectXDevice {
   std::shared_ptr<DirectHostBuffer> host_buffer(
       UINT64 size, DLDataType type,
       DirectHostBuffer::hostbuffer_state state = DirectHostBuffer::hostbuffer_state::upload) {
-    return std::make_shared<DirectHostBuffer>(this, size, type,state);
+    return std::make_shared<DirectHostBuffer>(this, size, type, state);
   }
-  DirectUploadBuffer upload_buffer(UINT64 size, DLDataType type) { return DirectUploadBuffer(this, size, type); }
-  DirectReadBackBuffer readback_buffer(UINT64 size, DLDataType type) { return DirectReadBackBuffer(this, size, type); }
+  DirectUploadBuffer upload_buffer(UINT64 size, DLDataType type) {
+    return DirectUploadBuffer(this, size, type);
+  }
+  DirectReadBackBuffer readback_buffer(UINT64 size, DLDataType type) {
+    return DirectReadBackBuffer(this, size, type);
+  }
 
   void buffer_copy(std::shared_ptr<DirectBuffer> tgt, std::shared_ptr<DirectBuffer> src,
                    bool async = false) {
@@ -104,27 +131,27 @@ class DirectXDevice {
     if (tgt->is_device() && src->is_device()) {
       copy(tgt->device(), src->device(), async);
     } else
-        // Device -> Host
-        if (tgt->is_host() && src->is_device()) {
-      // if change some part, otherwise just reallocate a new buff;
-      std::static_pointer_cast<DirectHostBuffer>(tgt)->change_state(
-          DirectHostBuffer::hostbuffer_state::readback);
-      copy(tgt->host(), src->device(), async);
-    } else
+      // Device -> Host
+      if (tgt->is_host() && src->is_device()) {
+        // if change some part, otherwise just reallocate a new buff;
+        std::static_pointer_cast<DirectHostBuffer>(tgt)->change_state(
+            DirectHostBuffer::hostbuffer_state::readback);
+        copy(tgt->host(), src->device(), async);
+      } else
         // Host -> Device
         if (tgt->is_device() && src->is_host()) {
-      // if change some part, otherwise just reallocate a new buff;
-      std::static_pointer_cast<DirectHostBuffer>(src)->change_state(
-          DirectHostBuffer::hostbuffer_state::upload);
-      copy(tgt->device(), src->host(), async);
-    } else if (tgt->is_host() && src->is_host()) {
-      // if change some part, otherwise just reallocate a new buff;
-      std::static_pointer_cast<DirectHostBuffer>(src)->change_state(
-          DirectHostBuffer::hostbuffer_state::upload);
-      std::static_pointer_cast<DirectHostBuffer>(tgt)->change_state(
-          DirectHostBuffer::hostbuffer_state::readback);
-      copy(tgt->host(), src->host(), async);
-    }
+          // if change some part, otherwise just reallocate a new buff;
+          std::static_pointer_cast<DirectHostBuffer>(src)->change_state(
+              DirectHostBuffer::hostbuffer_state::upload);
+          copy(tgt->device(), src->host(), async);
+        } else if (tgt->is_host() && src->is_host()) {
+          // if change some part, otherwise just reallocate a new buff;
+          std::static_pointer_cast<DirectHostBuffer>(src)->change_state(
+              DirectHostBuffer::hostbuffer_state::upload);
+          std::static_pointer_cast<DirectHostBuffer>(tgt)->change_state(
+              DirectHostBuffer::hostbuffer_state::readback);
+          copy(tgt->host(), src->host(), async);
+        }
   }
 
   void buffer_copy(std::shared_ptr<DirectBuffer> tgt, UINT64 tgt_offset,
@@ -134,29 +161,29 @@ class DirectXDevice {
     if (tgt->is_device() && src->is_device()) {
       range_copy(tgt->device(), tgt_offset, src->device(), src_offset, num_bytes, async);
     } else
-        // Device -> Host
-        if (tgt->is_host() && src->is_device()) {
-      // if change some part, otherwise just reallocate a new buff;
-      std::static_pointer_cast<DirectHostBuffer>(tgt)->change_state(
-          DirectHostBuffer::hostbuffer_state::readback);
-      range_copy(tgt->host(), tgt_offset, src->device(), src_offset, num_bytes, async);
-    } else
+      // Device -> Host
+      if (tgt->is_host() && src->is_device()) {
+        // if change some part, otherwise just reallocate a new buff;
+        std::static_pointer_cast<DirectHostBuffer>(tgt)->change_state(
+            DirectHostBuffer::hostbuffer_state::readback);
+        range_copy(tgt->host(), tgt_offset, src->device(), src_offset, num_bytes, async);
+      } else
         // Host -> Device
         if (tgt->is_device() && src->is_host()) {
-      // if change some part, otherwise just reallocate a new buff;
-      std::static_pointer_cast<DirectHostBuffer>(src)->change_state(
-          DirectHostBuffer::hostbuffer_state::upload);
-      range_copy(tgt->device(), tgt_offset, src->host(), src_offset, num_bytes, async);
-    } else
-        // Host -> Host
-        if (tgt->is_host() && src->is_host()) {
-      // if change some part, otherwise just reallocate a new buff;
-      std::static_pointer_cast<DirectHostBuffer>(src)->change_state(
-          DirectHostBuffer::hostbuffer_state::upload);
-      std::static_pointer_cast<DirectHostBuffer>(tgt)->change_state(
-          DirectHostBuffer::hostbuffer_state::readback);
-      range_copy(tgt->host(), tgt_offset, src->host(), src_offset, num_bytes, async);
-    }
+          // if change some part, otherwise just reallocate a new buff;
+          std::static_pointer_cast<DirectHostBuffer>(src)->change_state(
+              DirectHostBuffer::hostbuffer_state::upload);
+          range_copy(tgt->device(), tgt_offset, src->host(), src_offset, num_bytes, async);
+        } else
+          // Host -> Host
+          if (tgt->is_host() && src->is_host()) {
+            // if change some part, otherwise just reallocate a new buff;
+            std::static_pointer_cast<DirectHostBuffer>(src)->change_state(
+                DirectHostBuffer::hostbuffer_state::upload);
+            std::static_pointer_cast<DirectHostBuffer>(tgt)->change_state(
+                DirectHostBuffer::hostbuffer_state::readback);
+            range_copy(tgt->host(), tgt_offset, src->host(), src_offset, num_bytes, async);
+          }
   }
 
  private:
@@ -188,7 +215,7 @@ class DirectXDevice {
     return {};
   }
 
-  bool is_file_existed(const std::wstring& src) {
+  bool is_file_existed(const std::string& src) {
     std::wifstream i(src);
     if (!i) return false;
     i.close();
@@ -276,14 +303,14 @@ class DirectXDevice {
     return _cmd_list;
   }
 
-  void copy(ComPtr<ID3D12Resource>& to, ComPtr<ID3D12Resource>& from, bool async = false) {
+  void copy(ComPtr<ID3D12Resource> to, ComPtr<ID3D12Resource> from, bool async = false) {
     auto cl = create_cmd_list();
     cl->CopyResource(to.Get(), from.Get());
     ThrowIfFailed(cl->Close());
     execute_cmd_queue(cl, async);
   }
 
-  void range_copy(ComPtr<ID3D12Resource>& to, UINT64 DstOffset, ComPtr<ID3D12Resource>& from,
+  void range_copy(ComPtr<ID3D12Resource> to, UINT64 DstOffset, ComPtr<ID3D12Resource> from,
                   UINT64 SrcOffset, UINT64 NumBytes, bool async = false) {
     auto cl = create_cmd_list();
     cl->CopyBufferRegion(to.Get(), DstOffset, from.Get(), SrcOffset, NumBytes);
