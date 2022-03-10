@@ -14,6 +14,8 @@
 // Adapter for non-windows
 #ifndef _WIN32
 #include "wsl/winadapter.h"
+#else
+#include <d3dcompiler.h>
 #endif
 
 #include "directx/d3d12.h"

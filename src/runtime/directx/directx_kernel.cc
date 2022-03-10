@@ -143,7 +143,7 @@ ComPtr<ID3DComputerShader> DirectComputeKernel::d3d_compile_with_threads(
 void DirectComputeKernel::d3d_compile(ComPtr<ID3DComputerShader>& entry_blob,
                                       const std::string& src, std::string entry_point,
                                       std::string profile) {
-  /*
+#ifdef _WIN32
   ComPtr<ID3DBlob> error_blob;
   ID3DInclude* dxc_includes = D3D_COMPILE_STANDARD_FILE_INCLUDE;
   UINT dxc_flags = D3DCOMPILE_ENABLE_STRICTNESS;
@@ -153,5 +153,7 @@ void DirectComputeKernel::d3d_compile(ComPtr<ID3DComputerShader>& entry_blob,
                            &error_blob));
   // Error blob mostly contains warning message.
   if (error_blob != nullptr) LOG(INFO) << (char*)error_blob->GetBufferPointer();
-  */
+#else
+  ThrowIfFailed(E_NOTIMPL);
+#endif
 }
