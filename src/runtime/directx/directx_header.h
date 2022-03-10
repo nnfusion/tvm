@@ -31,14 +31,11 @@
   #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
 #endif
 
-/*
-#ifndef DX_WSL
-#include <d3dcompiler.h>
+#ifndef WIN32
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxcore.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 #endif
-*/
 
 // A macro to disallow the copy constructor and operator= functions
 // This should be used in the private: declarations for a class

@@ -4,7 +4,7 @@
 #include "directx_header.h"
 #include "directx_kernel.h"
 
-#ifndef _win32
+#ifndef WIN32
 //Those for linux/wsl
 #include <sys/eventfd.h>
 #endif
@@ -76,7 +76,7 @@ class DirectXDevice {
   // Fence waits the singal then trigger event
   // CPU is waiting for the event
   void device_fence_sync() {
-#ifdef _win32
+#ifdef WIN32
     // Create fence which has frame#0
     ComPtr<ID3D12Fence> fence;
     _dev->CreateFence(_frame, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&fence));
