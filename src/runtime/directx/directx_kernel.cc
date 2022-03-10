@@ -2,6 +2,7 @@
 #include <regex>
 
 #include "directx_header.h"
+#include "directx_shader_compiler.h"
 
 using namespace tvm::runtime::dx;
 
@@ -154,6 +155,14 @@ void DirectComputeKernel::d3d_compile(ComPtr<ID3DComputerShader>& entry_blob,
   // Error blob mostly contains warning message.
   if (error_blob != nullptr) LOG(INFO) << (char*)error_blob->GetBufferPointer();
 #else
-  ThrowIfFailed(E_NOTIMPL);
+  // ThrowIfFailed(E_NOTIMPL);
+  dxc_compile(entry_blob, src, entry_point, "cs_6_4");
 #endif
+}
+
+void DirectComputeKernel::dxc_compile(ComPtr<ID3DComputerShader>& entry_blob,
+                                      const std::string& src, std::string entry_point,
+                                      std::string profile) {
+  auto pblob = (ID3DComputerShader*)dxcompile(src, entry_point, profile);
+  entry_blob.Attach(pblob);
 }

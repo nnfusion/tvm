@@ -70,7 +70,7 @@ class DirectComputeKernel {
   ComPtr<ID3DComputerShader> d3d_compile_with_threads(const std::string& src, std::string entry,
                                                       std::vector<uint32_t> threads);
   // todo(wenxh): Support DXIL&DXC later;
-  void dxc_compile(ComPtr<ID3DComputerShader> entry_blob, const std::string& src,
+  void dxc_compile(ComPtr<ID3DComputerShader>& entry_blob, const std::string& src,
                    std::string entry_point, std::string profile = "cs_6_4");
 };
 
