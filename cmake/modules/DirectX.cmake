@@ -18,20 +18,27 @@
 # DirectX Module
 
 if(USE_DIRECTX)
+  # Looking for dx libs
+  list(APPEND dx_dep_libs "")
+ 
+  # check if in wsl
+  if(EXISTS "/dev/dxg")
+    find_library(libd3d12 d3d12 HINTS /lib/wsl/lib)
+    find_library(libd3d12core d3d12core HINTS /lib/wsl/lib)
+    find_library(libdxcore dxcore HINTS /lib/wsl/lib)
+    list(APPEND dx_dep_libs ${libd3d12} ${libd3d12core} ${libdxcore})
+  endif()
+
   message(STATUS "Build with DirectX support")
   find_package(directx-headers CONFIG REQUIRED)
   file(GLOB RUNTIME_DIRECTX_SRCS src/runtime/directx/*.cc)
-  #list(APPEND RUNTIME_SRCS ${RUNTIME_DIRECTX_SRCS})
-  #list(APPEND TVM_RUNTIME_LINKER_LIBS Microsoft::DirectX-Guids Microsoft::DirectX-Headers)
-  #list(APPEND TVM_LINKER_LIBS Microsoft::DirectX-Guids Microsoft::DirectX-Headers)
-  add_library(dx_runtime_lib ${RUNTIME_DIRECTX_SRCS})
-  target_link_libraries(dx_runtime_lib Microsoft::DirectX-Guids Microsoft::DirectX-Headers)
-  list(APPEND TVM_RUNTIME_LINKER_LIBS dx_runtime_lib)
-  list(APPEND TVM_LINKER_LIBS dx_runtime_lib)
+  add_library(dx_lib ${RUNTIME_DIRECTX_SRCS})
+  target_link_libraries(dx_lib PRIVATE Microsoft::DirectX-Headers ${dx_dep_libs})
+  list(APPEND TVM_RUNTIME_LINKER_LIBS dx_lib)
   if(GTEST_FOUND)
     file(GLOB RUNTIME_TEST_DIRECTX_SRCS src/runtime/directx/test/*.cc)
 	add_executable(dx_test ${RUNTIME_TEST_DIRECTX_SRCS})
-    target_link_libraries(dx_test tvm_libinfo_objs tvm_objs tvm_runtime_objs GTest::GTest GTest::Main dx_runtime_lib Microsoft::DirectX-Guids Microsoft::DirectX-Headers)
+    target_link_libraries(dx_test tvm_libinfo_objs tvm_objs tvm_runtime_objs GTest::GTest GTest::Main dx_lib)
 	gtest_discover_tests(dx_test)
   endif()
 else()
