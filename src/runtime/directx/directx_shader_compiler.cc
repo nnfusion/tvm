@@ -2,7 +2,9 @@
 
 #include "dxc/dxcapi.h"
 
-using namespace tvm::runtime::dx;
+namespace tvm {
+namespace runtime {
+namespace dx {
 
 // Based on https://github.com/microsoft/DirectXShaderCompiler/wiki/Using-dxc.exe-and-dxcompiler.dll
 void* dxcompile(const std::string& src, std::string entry_point, std::string profile) {
@@ -51,3 +53,6 @@ void* dxcompile(const std::string& src, std::string entry_point, std::string pro
   if (pShader != nullptr) return pShader.Detach();
   return nullptr;
 }
+}  // namespace dx
+}  // namespace runtime
+}  // namespace tvm
