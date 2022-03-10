@@ -29,6 +29,10 @@ jobs:
       shell: cmd
       run: ${{env.VCPKG_EXE_PATH}} install gtest:x64-windows
       
+    - name: VCPKG install DirectX-Headers
+      shell: cmd
+      run: ${{env.VCPKG_EXE_PATH}} install DirectX-Headers:x64-windows
+      
     - name: Configure CMake
       shell: cmd
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
