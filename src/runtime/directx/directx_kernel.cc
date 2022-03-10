@@ -160,9 +160,11 @@ void DirectComputeKernel::d3d_compile(ComPtr<ID3DComputerShader>& entry_blob,
 #endif
 }
 
+#ifndef _WIN32
 void DirectComputeKernel::dxc_compile(ComPtr<ID3DComputerShader>& entry_blob,
                                       const std::string& src, std::string entry_point,
                                       std::string profile) {
   auto pblob = (ID3DComputerShader*)dxcompile(src, entry_point, profile);
   entry_blob.Attach(pblob);
 }
+#endif
