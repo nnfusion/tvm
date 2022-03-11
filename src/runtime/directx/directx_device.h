@@ -17,7 +17,7 @@ class DirectXDevice {
  public:
   DirectXDevice(ComPtr<IDXCoreAdapter> adapter, uint32_t device_number) {
     const D3D_FEATURE_LEVEL dx_min_lv{D3D_FEATURE_LEVEL_12_0};
-    ThrowIfFailed(D3D12CreateDevice(_adapter.Get(), dx_min_lv, IID_PPV_ARGS(&_dev)));
+    ThrowIfFailed(D3D12CreateDevice(adapter.Get(), dx_min_lv, IID_PPV_ARGS(&_dev)));
     _cmd_alloc = create_cmd_alloc();
     _cmd_queue = create_cmd_queue();
     _number = device_number;
