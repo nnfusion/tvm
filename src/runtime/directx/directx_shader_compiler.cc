@@ -69,8 +69,8 @@ void dxc_compile(const std::string& src, std::string entry_point, std::string pr
   CComPtr<IDxcBlobUtf8> pErrors = nullptr;
   pResults->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&pErrors), nullptr);
   // This will have all message
-  if (pErrors != nullptr && pErrors->GetStringLength() != 0)
-    wprintf(L"Warnings and Errors:\n%S\n", pErrors->GetStringPointer());
+  // if (pErrors != nullptr && pErrors->GetStringLength() != 0)
+  //   wprintf(L"Warnings and Errors:\n%S\n", pErrors->GetStringPointer());
 
   // Check if failed
   HRESULT hrStatus;
