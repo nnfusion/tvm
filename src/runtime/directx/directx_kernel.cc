@@ -62,7 +62,7 @@ void DirectComputeKernel::device_create_launch_state(
   // Computer pipeline state description contains: signature, kernel, etc ...
   D3D12_COMPUTE_PIPELINE_STATE_DESC _cpsd;
   ZeroMemory(&_cpsd, sizeof(_cpsd));
-  _cpsd.CS = dxc::CD3DX12_SHADER_BYTECODE(_kernel.Get());
+  _cpsd.CS = CD3DX12_SHADER_BYTECODE(_kernel->GetBufferPointer(), _kernel->GetBufferSize());
   _cpsd.pRootSignature = _sig.Get();
   _cpsd.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
   // Put description int computer pipeline state
@@ -115,8 +115,9 @@ std::string DirectComputeKernel::read_from_hlsl_file(const std::string& hlsl) {
 
 DirectComputeKernel::DirectComputeKernel(const std::string& src) { _hlsl_source = src; }
 
-ComPtr<dxc::IDxcBlob> DirectComputeKernel::dxc_compile_with_threads(
-    const std::string& src, std::string entry, std::vector<uint32_t> thread) {
+ComPtr<dxc::IDxcBlob> DirectComputeKernel::dxc_compile_with_threads(const std::string& src,
+                                                                    std::string entry,
+                                                                    std::vector<uint32_t> thread) {
   auto& exist_thread = _func_descs[entry].thread;
   auto& desc = _func_descs[entry];
   if (desc.cache.find(thread) != desc.cache.end()) {
@@ -141,8 +142,12 @@ ComPtr<dxc::IDxcBlob> DirectComputeKernel::dxc_compile_with_threads(
   return ics;
 }
 
-void DirectComputeKernel::dxc_compile(ComPtr<dxc::IDxcBlob>& entry_blob,
-                                      const std::string& src, std::string entry_point,
-                                      std::string profile) {
+void DirectComputeKernel::dxc_compile(ComPtr<dxc::IDxcBlob>& entry_blob, const std::string& src,
+                                      std::string entry_point, std::string profile) {
   dxc::dxc_compile(src, entry_point, profile, (void**)(entry_blob.GetAddressOf()));
+  #ifdef _WIN32
+  if (!dxc::is_dxil_signed(entry_blob->GetBufferPointer())) {
+    LOG(INFO) << entry_point << " Dxil is not signed!";
+  }
+  #endif
 }

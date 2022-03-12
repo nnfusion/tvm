@@ -146,7 +146,7 @@ class com_exception : public std::exception {
 #define ThrowIfFailed(hr)                                                     \
   if (FAILED(hr)) {                                                           \
     throw com_exception(hr, std::string(__FILE__), std::to_string(__LINE__)); \
-  }                                                                           
+  }
 }  // namespace DirectX
 
 using namespace Microsoft::WRL;
@@ -180,23 +180,20 @@ struct IDxcBlob : public IUnknown {
   virtual size_t GetBufferSize() = 0;
 };
 
-struct CD3DX12_SHADER_BYTECODE : public D3D12_SHADER_BYTECODE {
-  CD3DX12_SHADER_BYTECODE() = default;
-  explicit CD3DX12_SHADER_BYTECODE(const D3D12_SHADER_BYTECODE& o) noexcept
-      : D3D12_SHADER_BYTECODE(o) {}
-  CD3DX12_SHADER_BYTECODE(_In_ ID3DBlob* pShaderBlob) noexcept {
-    pShaderBytecode = pShaderBlob->GetBufferPointer();
-    BytecodeLength = pShaderBlob->GetBufferSize();
-  }
-  CD3DX12_SHADER_BYTECODE(_In_ IDxcBlob* pShaderBlob) noexcept {
-    pShaderBytecode = pShaderBlob->GetBufferPointer();
-    BytecodeLength = pShaderBlob->GetBufferSize();
-  }
-  CD3DX12_SHADER_BYTECODE(const void* _pShaderBytecode, SIZE_T bytecodeLength) noexcept {
-    pShaderBytecode = _pShaderBytecode;
-    BytecodeLength = bytecodeLength;
-  }
+struct DxilMinimalHeader {
+  UINT32 four_cc;
+  UINT32 hash_digest[4];
 };
+
+inline bool is_dxil_signed(void* buffer) {
+  DxilMinimalHeader* header = reinterpret_cast<DxilMinimalHeader*>(buffer);
+  bool has_digest = false;
+  has_digest |= header->hash_digest[0] != 0x0;
+  has_digest |= header->hash_digest[1] != 0x0;
+  has_digest |= header->hash_digest[2] != 0x0;
+  has_digest |= header->hash_digest[3] != 0x0;
+  return has_digest;
+}
 }  // namespace dxc
 
 }  // namespace dx
