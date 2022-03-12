@@ -145,9 +145,5 @@ ComPtr<dxc::IDxcBlob> DirectComputeKernel::dxc_compile_with_threads(const std::s
 void DirectComputeKernel::dxc_compile(ComPtr<dxc::IDxcBlob>& entry_blob, const std::string& src,
                                       std::string entry_point, std::string profile) {
   dxc::dxc_compile(src, entry_point, profile, (void**)(entry_blob.GetAddressOf()));
-  #ifdef _WIN32
-  if (!dxc::is_dxil_signed(entry_blob->GetBufferPointer())) {
-    LOG(INFO) << entry_point << " Dxil is not signed!";
-  }
-  #endif
+  ThrowIfFailed(dxc::check_dxil(entry_blob->GetBufferPointer()));
 }

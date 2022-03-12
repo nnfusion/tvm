@@ -14,8 +14,6 @@
 // Adapter for non-windows
 #ifndef _WIN32
 #include "wsl/winadapter.h"
-#else
-#include <d3dcompiler.h>
 #endif
 
 #include "directx/d3d12.h"
@@ -69,8 +67,6 @@
 #define DXGI_ERROR_UNSUPPORTED 0x887A0004
 #endif
 
-#define D3D11_E_INVALIDARG 0x80070057
-
 namespace DirectX {
 inline const char* GetErrorString(HRESULT error) {
   switch (error) {
@@ -83,7 +79,6 @@ inline const char* GetErrorString(HRESULT error) {
     case E_OUTOFMEMORY:
       return "E_OUTOFMEMORY";
     case E_INVALIDARG:
-    case D3D11_E_INVALIDARG:
       return "E_INVALIDARG";
     case E_NOINTERFACE:
       return "E_NOINTERFACE";
@@ -164,36 +159,20 @@ class DirectXContext;
 namespace dxc {
 struct IUnknown {
   IUnknown() : m_count(0){};
-  virtual long QueryInterface() = 0;
-  virtual long AddRef();
-  virtual long Release();
-  virtual ~IUnknown();
+  virtual HRESULT QueryInterface(REFIID riid, void** ppvObject) = 0;
+  virtual ULONG AddRef();
+  virtual ULONG Release();
+  // virtual ~IUnknown();
 
  private:
   std::atomic<unsigned long> m_count;
 };
-
 // IDxcBlob is an alias of ID3D10Blob and ID3DBlob
 struct IDxcBlob : public IUnknown {
  public:
-  virtual void* GetBufferPointer() = 0;
-  virtual size_t GetBufferSize() = 0;
+  virtual LPVOID STDMETHODCALLTYPE GetBufferPointer(void) = 0;
+  virtual SIZE_T STDMETHODCALLTYPE GetBufferSize(void) = 0;
 };
-
-struct DxilMinimalHeader {
-  UINT32 four_cc;
-  UINT32 hash_digest[4];
-};
-
-inline bool is_dxil_signed(void* buffer) {
-  DxilMinimalHeader* header = reinterpret_cast<DxilMinimalHeader*>(buffer);
-  bool has_digest = false;
-  has_digest |= header->hash_digest[0] != 0x0;
-  has_digest |= header->hash_digest[1] != 0x0;
-  has_digest |= header->hash_digest[2] != 0x0;
-  has_digest |= header->hash_digest[3] != 0x0;
-  return has_digest;
-}
 }  // namespace dxc
 
 }  // namespace dx

@@ -11,6 +11,13 @@ namespace runtime {
 namespace dx {
 namespace dxc {
 
+struct DxilMinimalHeader {
+  char four_cc[4];
+  uint32_t hash_digest[4];
+};
+
+long check_dxil(void* buffer, bool must_signed = false);
+
 void dxc_compile(const std::string& src, std::string entry_point, std::string profile, void** pshader);
 
 }  // namespace dxc
