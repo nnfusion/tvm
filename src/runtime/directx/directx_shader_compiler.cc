@@ -16,7 +16,7 @@ namespace runtime {
 namespace dx {
 namespace dxc {
 
-HRESULT check_dxil(void* buffer, bool must_signed) {
+long check_dxil(void* buffer, bool must_signed) {
   DxilMinimalHeader* header = reinterpret_cast<DxilMinimalHeader*>(buffer);
   try {
     bool has_header = true;

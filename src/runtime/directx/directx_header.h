@@ -162,7 +162,10 @@ struct IUnknown {
   virtual HRESULT QueryInterface(REFIID riid, void** ppvObject) = 0;
   virtual ULONG AddRef();
   virtual ULONG Release();
-  // virtual ~IUnknown();
+// todo(wenxh): Hacked code for alignment of virtual functions
+#ifndef _WIN32
+  virtual ~IUnknown();
+#endif
 
  private:
   std::atomic<unsigned long> m_count;
