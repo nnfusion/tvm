@@ -26,11 +26,11 @@
 #include "dxguids/dxguids.h"
 
 #ifndef _countof
-  #define _countof(a) (sizeof(a) / sizeof(*(a)))
+#define _countof(a) (sizeof(a) / sizeof(*(a)))
 #endif
 
 #ifndef ZeroMemory
-  #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
+#define ZeroMemory(Destination, Length) memset((Destination), 0, (Length))
 #endif
 
 #ifdef _WIN32
@@ -57,6 +57,20 @@
 // Becasue some interface of DirectX need windows api/DS,
 // and for cross-platform compatiblity we need stl and so on..
 
+#ifndef DXGI_ERROR_NOT_FOUND
+#define DXGI_ERROR_NOT_FOUND 0x887A0002
+#endif
+
+#ifndef DXGI_ERROR_MORE_DATA
+#define DXGI_ERROR_MORE_DATA 0x887A0003
+#endif
+
+#ifndef DXGI_ERROR_UNSUPPORTED
+#define DXGI_ERROR_UNSUPPORTED 0x887A0004
+#endif
+
+#define D3D11_E_INVALIDARG 0x80070057
+
 namespace DirectX {
 inline const char* GetErrorString(HRESULT error) {
   switch (error) {
@@ -69,6 +83,7 @@ inline const char* GetErrorString(HRESULT error) {
     case E_OUTOFMEMORY:
       return "E_OUTOFMEMORY";
     case E_INVALIDARG:
+    case D3D11_E_INVALIDARG:
       return "E_INVALIDARG";
     case E_NOINTERFACE:
       return "E_NOINTERFACE";
@@ -86,12 +101,12 @@ inline const char* GetErrorString(HRESULT error) {
       return "E_UNEXPECTED";
     case DXGI_ERROR_INVALID_CALL:
       return "DXGI_ERROR_INVALID_CALL";
-    // case DXGI_ERROR_NOT_FOUND:
-    //   return "DXGI_ERROR_NOT_FOUND";
-    // case DXGI_ERROR_MORE_DATA:
-    //   return "DXGI_ERROR_MORE_DATA";
-    // case DXGI_ERROR_UNSUPPORTED:
-    //   return "DXGI_ERROR_UNSUPPORTED";
+    case DXGI_ERROR_NOT_FOUND:
+      return "DXGI_ERROR_NOT_FOUND";
+    case DXGI_ERROR_MORE_DATA:
+      return "DXGI_ERROR_MORE_DATA";
+    case DXGI_ERROR_UNSUPPORTED:
+      return "DXGI_ERROR_UNSUPPORTED";
     case DXGI_ERROR_DEVICE_REMOVED:
       return "DXGI_ERROR_DEVICE_REMOVED";
     case DXGI_ERROR_DEVICE_HUNG:
@@ -128,13 +143,10 @@ class com_exception : public std::exception {
   std::string file, line;
 };
 
-// Helper utility converts D3D API failures into exceptions.
-inline void ThrowIfFailed(HRESULT hr) noexcept(false) {
-  if (FAILED(hr)) {
-    throw com_exception(hr, std::string(__FILE__), std::to_string(__LINE__));
-  }
-}
-
+#define ThrowIfFailed(hr)                                                     \
+  if (FAILED(hr)) {                                                           \
+    throw com_exception(hr, std::string(__FILE__), std::to_string(__LINE__)); \
+  }                                                                           
 }  // namespace DirectX
 
 using namespace Microsoft::WRL;
@@ -148,6 +160,44 @@ using ID3DComputerShader = ID3DBlob;
 class DirectComputeKernel;
 class DirectXDevice;
 class DirectXContext;
+
+namespace dxc {
+struct IUnknown {
+  IUnknown() : m_count(0){};
+  virtual long QueryInterface() = 0;
+  virtual long AddRef();
+  virtual long Release();
+  virtual ~IUnknown();
+
+ private:
+  std::atomic<unsigned long> m_count;
+};
+
+// IDxcBlob is an alias of ID3D10Blob and ID3DBlob
+struct IDxcBlob : public IUnknown {
+ public:
+  virtual void* GetBufferPointer() = 0;
+  virtual size_t GetBufferSize() = 0;
+};
+
+struct CD3DX12_SHADER_BYTECODE : public D3D12_SHADER_BYTECODE {
+  CD3DX12_SHADER_BYTECODE() = default;
+  explicit CD3DX12_SHADER_BYTECODE(const D3D12_SHADER_BYTECODE& o) noexcept
+      : D3D12_SHADER_BYTECODE(o) {}
+  CD3DX12_SHADER_BYTECODE(_In_ ID3DBlob* pShaderBlob) noexcept {
+    pShaderBytecode = pShaderBlob->GetBufferPointer();
+    BytecodeLength = pShaderBlob->GetBufferSize();
+  }
+  CD3DX12_SHADER_BYTECODE(_In_ IDxcBlob* pShaderBlob) noexcept {
+    pShaderBytecode = pShaderBlob->GetBufferPointer();
+    BytecodeLength = pShaderBlob->GetBufferSize();
+  }
+  CD3DX12_SHADER_BYTECODE(const void* _pShaderBytecode, SIZE_T bytecodeLength) noexcept {
+    pShaderBytecode = _pShaderBytecode;
+    BytecodeLength = bytecodeLength;
+  }
+};
+}  // namespace dxc
 
 }  // namespace dx
 }  // namespace runtime

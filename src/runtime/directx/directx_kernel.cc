@@ -8,7 +8,7 @@ using namespace tvm::runtime::dx;
 
 void DirectComputeKernel::device_create_launch_state(
     DirectXDevice* _dxdev, std::vector<std::shared_ptr<DirectBuffer>>& _buf,
-    ComPtr<ID3DComputerShader>& _kernel, ComPtr<ID3D12PipelineState>& _ps,
+    ComPtr<dxc::IDxcBlob>& _kernel, ComPtr<ID3D12PipelineState>& _ps,
     ComPtr<ID3D12RootSignature>& _sig, ComPtr<ID3D12DescriptorHeap>& _heap) {
   ComPtr<ID3DBlob> _sig_blob;
   ComPtr<ID3DBlob> _err_blob;
@@ -62,7 +62,7 @@ void DirectComputeKernel::device_create_launch_state(
   // Computer pipeline state description contains: signature, kernel, etc ...
   D3D12_COMPUTE_PIPELINE_STATE_DESC _cpsd;
   ZeroMemory(&_cpsd, sizeof(_cpsd));
-  _cpsd.CS = CD3DX12_SHADER_BYTECODE(_kernel.Get());
+  _cpsd.CS = dxc::CD3DX12_SHADER_BYTECODE(_kernel.Get());
   _cpsd.pRootSignature = _sig.Get();
   _cpsd.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
   // Put description int computer pipeline state
@@ -86,7 +86,7 @@ void DirectComputeKernel::device_dispatch(DirectXDevice* _dxdev,
   auto& function = _func_descs[_func_name];
   if (block.empty()) block = function.block;
   if (thread.empty()) thread = function.thread;
-  ComPtr<ID3DComputerShader> _kernel = d3d_compile_with_threads(_hlsl_source, _func_name, thread);
+  ComPtr<dxc::IDxcBlob> _kernel = dxc_compile_with_threads(_hlsl_source, _func_name, thread);
   // todo(wenxh): Those states can be merged into some state structure
   device_create_launch_state(_dxdev, _buf, _kernel, function.pipeline_state, function.signature,
                              function.heap);
@@ -115,7 +115,7 @@ std::string DirectComputeKernel::read_from_hlsl_file(const std::string& hlsl) {
 
 DirectComputeKernel::DirectComputeKernel(const std::string& src) { _hlsl_source = src; }
 
-ComPtr<ID3DComputerShader> DirectComputeKernel::d3d_compile_with_threads(
+ComPtr<dxc::IDxcBlob> DirectComputeKernel::dxc_compile_with_threads(
     const std::string& src, std::string entry, std::vector<uint32_t> thread) {
   auto& exist_thread = _func_descs[entry].thread;
   auto& desc = _func_descs[entry];
@@ -135,36 +135,14 @@ ComPtr<ID3DComputerShader> DirectComputeKernel::d3d_compile_with_threads(
                             "\)] void " + desc.name;
   // LOG(INFO) << "DirectX Runtime Launch kernel: " << new_threads;
   std::string new_source = std::regex_replace(source, thread_match, new_threads);
-  ComPtr<ID3DComputerShader> ics;
-  d3d_compile(ics, new_source, entry);
+  ComPtr<dxc::IDxcBlob> ics;
+  dxc_compile(ics, new_source, entry);
   desc.cache[thread] = ics;
   return ics;
 }
 
-void DirectComputeKernel::d3d_compile(ComPtr<ID3DComputerShader>& entry_blob,
+void DirectComputeKernel::dxc_compile(ComPtr<dxc::IDxcBlob>& entry_blob,
                                       const std::string& src, std::string entry_point,
                                       std::string profile) {
-#ifdef _WIN32
-  ComPtr<ID3DBlob> error_blob;
-  ID3DInclude* dxc_includes = D3D_COMPILE_STANDARD_FILE_INCLUDE;
-  UINT dxc_flags = D3DCOMPILE_ENABLE_STRICTNESS;
-  std::string fake_file = entry_point + "_kernel.hlsl";
-  ThrowIfFailed(D3DCompile(src.c_str(), src.length(), fake_file.c_str(), nullptr, dxc_includes,
-                           entry_point.c_str(), profile.c_str(), dxc_flags, 0, &(entry_blob),
-                           &error_blob));
-  // Error blob mostly contains warning message.
-  if (error_blob != nullptr) LOG(INFO) << (char*)error_blob->GetBufferPointer();
-#else
-  // ThrowIfFailed(E_NOTIMPL);
-  dxc_compile(entry_blob, src, entry_point, "cs_6_4");
-#endif
+  dxc::dxc_compile(src, entry_point, profile, (void**)(entry_blob.GetAddressOf()));
 }
-
-#ifndef _WIN32
-void DirectComputeKernel::dxc_compile(ComPtr<ID3DComputerShader>& entry_blob,
-                                      const std::string& src, std::string entry_point,
-                                      std::string profile) {
-  auto pblob = (ID3DComputerShader*)dxcompile(src, entry_point, profile);
-  entry_blob.Attach(pblob);
-}
-#endif

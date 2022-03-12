@@ -9,10 +9,11 @@
 namespace tvm {
 namespace runtime {
 namespace dx {
+namespace dxc {
 
-// Return value is a pointer to ID3DBlob
-void* dxcompile(const std::string& src, std::string entry_point, std::string profile);
+void dxc_compile(const std::string& src, std::string entry_point, std::string profile, void** pshader);
 
+}  // namespace dxc
 }  // namespace dx
 }  // namespace runtime
 }  // namespace tvm

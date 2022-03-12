@@ -5,9 +5,10 @@
 namespace tvm {
 namespace runtime {
 namespace dx {
+namespace dxc {
 
 // Based on https://github.com/microsoft/DirectXShaderCompiler/wiki/Using-dxc.exe-and-dxcompiler.dll
-void* dxcompile(const std::string& src, std::string entry_point, std::string profile) {
+void dxc_compile(const std::string& src, std::string entry_point, std::string profile, void** pshader) {
   std::wstring w_entry_point(entry_point.begin(), entry_point.end());
   std::wstring w_profile(profile.begin(), profile.end());
   std::wstring w_file_name = w_entry_point + L"_kernel.hlsl";
@@ -25,11 +26,11 @@ void* dxcompile(const std::string& src, std::string entry_point, std::string pro
 
   // Load source code
   CComPtr<IDxcBlobEncoding> pSource = nullptr;
-  pUtils->CreateBlobFromPinned(src.c_str(), src.length(), CP_UTF8, &pSource);
+  pUtils->CreateBlobFromPinned(src.c_str(), src.length(), CP_ACP, &pSource);
   DxcBuffer Source;
   Source.Ptr = pSource->GetBufferPointer();
   Source.Size = pSource->GetBufferSize();
-  Source.Encoding = CP_UTF8;
+  Source.Encoding = CP_ACP;
 
   // Compile
   CComPtr<IDxcResult> pResults;
@@ -38,9 +39,9 @@ void* dxcompile(const std::string& src, std::string entry_point, std::string pro
   // Check output
   CComPtr<IDxcBlobUtf8> pErrors = nullptr;
   pResults->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&pErrors), nullptr);
+  // This will have all message
   if (pErrors != nullptr && pErrors->GetStringLength() != 0)
-    // wprintf(L"Warnings and Errors:\n%S\n", pErrors->GetStringPointer());
-    /*This will have all message*/;
+    wprintf(L"Warnings and Errors:\n%S\n", pErrors->GetStringPointer());
 
   // Check if failed
   HRESULT hrStatus;
@@ -48,11 +49,9 @@ void* dxcompile(const std::string& src, std::string entry_point, std::string pro
   if (FAILED(hrStatus)) throw std::runtime_error("Compilation Failed\n");
 
   // Retrieve shader
-  CComPtr<IDxcBlob> pShader = nullptr;
-  pResults->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&pShader), nullptr);
-  if (pShader != nullptr) return pShader.Detach();
-  return nullptr;
+  pResults->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), pshader, nullptr);
 }
+}  // namespace dxc
 }  // namespace dx
 }  // namespace runtime
 }  // namespace tvm

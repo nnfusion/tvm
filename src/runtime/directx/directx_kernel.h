@@ -24,8 +24,8 @@ class DirectComputeKernel {
 
     std::string name;
     std::vector<uint32_t> block, thread;
-    ComPtr<ID3DComputerShader> entry;
-    std::unordered_map<std::vector<uint32_t>, ComPtr<ID3DComputerShader>, Hash> cache;
+    ComPtr<dxc::IDxcBlob> entry;
+    std::unordered_map<std::vector<uint32_t>, ComPtr<dxc::IDxcBlob>, Hash> cache;
     ComPtr<ID3D12PipelineState> pipeline_state;
     ComPtr<ID3D12RootSignature> signature;
     ComPtr<ID3D12DescriptorHeap> heap;
@@ -49,12 +49,10 @@ class DirectComputeKernel {
   DISALLOW_COPY_AND_ASSIGN(DirectComputeKernel);
   void device_create_launch_state(DirectXDevice* _dxdev,
                                   std::vector<std::shared_ptr<DirectBuffer>>& _buf,
-                                  ComPtr<ID3DComputerShader>& _kernel,
+                                  ComPtr<dxc::IDxcBlob>& _kernel,
                                   ComPtr<ID3D12PipelineState>& _ps,
                                   ComPtr<ID3D12RootSignature>& _sig,
                                   ComPtr<ID3D12DescriptorHeap>& _heap);
-  void d3d_compile(ComPtr<ID3DComputerShader>& entry_blob, const std::string& src,
-                   std::string entry_point, std::string profile = "cs_5_1");
   void device_dispatch(DirectXDevice* _dxdev, std::vector<std::shared_ptr<DirectBuffer>> _buf,
                        std::string _func_name = "", std::vector<uint32_t> block = {},
                        std::vector<uint32_t> thread = {}, bool async = false);
@@ -67,10 +65,10 @@ class DirectComputeKernel {
   std::string _hlsl_source;
   std::unordered_map<std::string, FunctionDescriptor> _func_descs;
   // This is to replace thread configure before launch and recompile
-  ComPtr<ID3DComputerShader> d3d_compile_with_threads(const std::string& src, std::string entry,
+  ComPtr<dxc::IDxcBlob> dxc_compile_with_threads(const std::string& src, std::string entry,
                                                       std::vector<uint32_t> threads);
   // todo(wenxh): Support DXIL&DXC later;
-  void dxc_compile(ComPtr<ID3DComputerShader>& entry_blob, const std::string& src,
+  void dxc_compile(ComPtr<dxc::IDxcBlob>& entry_blob, const std::string& src,
                    std::string entry_point, std::string profile = "cs_6_4");
 };
 
