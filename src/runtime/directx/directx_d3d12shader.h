@@ -1,4 +1,5 @@
 #pragma once
+#ifndef _WIN32
 #ifndef DECLSPEC_NOTHROW
 #if (_MSC_VER >= 1200) && !defined(MIDL_PASS)
 #define DECLSPEC_NOTHROW   __declspec(nothrow)
@@ -31,5 +32,6 @@
 #define IFACEMETHOD_(type,method)   __override STDMETHOD_(type,method)
 #define IFACEMETHODV(method)        __override STDMETHODV(method)
 #define IFACEMETHODV_(type,method)  __override STDMETHODV_(type,method)
+#endif
 
 #include "directx/d3d12shader.h"

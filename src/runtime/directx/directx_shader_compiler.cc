@@ -89,6 +89,7 @@ void dxc_compile(const std::string& src, std::string entry_point, std::string pr
     DxcBuffer ReflectionData;
     ReflectionData.Encoding = DXC_CP_ACP;
     ReflectionData.Ptr = pReflectionData->GetBufferPointer();
+    ReflectionData.Size = pReflectionData->GetBufferSize();
    
     pUtils->CreateReflection(&ReflectionData, __uuidof(ID3D12ShaderReflection), preflection);
   }

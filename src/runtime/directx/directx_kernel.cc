@@ -65,7 +65,7 @@ D3D12_DESCRIPTOR_RANGE_TYPE DirectComputeKernel::GetDescriptorRangeType(
 DirectComputeKernel::BindingData DirectComputeKernel::ReflectBindingData(
     std ::vector<D3D12_SHADER_INPUT_BIND_DESC> shaderInputDescs) {
   std::vector<D3D12_DESCRIPTOR_RANGE1> descriptorRanges;
-  std::unordered_map<std::string, DirectComputeKernel::BindPoint> bindPoints;
+  std::vector<BindPoint> bindPoints;
 
   D3D12_DESCRIPTOR_RANGE1 currentRange = {};
   currentRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
@@ -77,13 +77,11 @@ DirectComputeKernel::BindingData DirectComputeKernel::ReflectBindingData(
     auto rangeType = GetDescriptorRangeType(shaderInputDesc);
     auto numDescriptors = shaderInputDesc.BindCount;
 
-    bindPoints[shaderInputDesc.Name] = {
-        viewType, rangeType, currentOffsetInDescriptors,
-        (viewType == DirectComputeKernel::BufferViewType::Structured ? shaderInputDesc.NumSamples
-                                                                     : 0)};
-    LOG(INFO) << shaderInputDesc.Name << "\t" << (int)viewType << "\t"
-              << currentOffsetInDescriptors;
-
+    bindPoints.push_back(
+        {viewType, rangeType, currentOffsetInDescriptors,
+         (viewType == DirectComputeKernel::BufferViewType::Structured ? shaderInputDesc.NumSamples
+                                                                      : 0),
+         shaderInputDesc.Name});
     if (rangeType == currentRange.RangeType &&
         shaderInputDesc.Space == currentRange.RegisterSpace) {
       currentRange.NumDescriptors += numDescriptors;
@@ -108,8 +106,8 @@ DirectComputeKernel::BindingData DirectComputeKernel::ReflectBindingData(
 }
 
 void DirectComputeKernel::CreateRootSignatureAndBindingMap(
-    ComPtr<ID3D12ShaderReflection> _reflection,
-    std::unordered_map<std::string, BindPoint>& _bindpoints, ComPtr<ID3DBlob>& rootSignatureBlob) {
+    ComPtr<ID3D12ShaderReflection> _reflection, std::vector<BindPoint>& _bindpoints,
+    ComPtr<ID3DBlob>& rootSignatureBlob) {
   D3D12_SHADER_DESC shaderDesc = {};
   ThrowIfFailed(_reflection->GetDesc(&shaderDesc));
 
@@ -147,197 +145,43 @@ void DirectComputeKernel::CreateRootSignatureAndBindingMap(
   }
 }
 
-void DirectComputeKernel::device_create_launch_state(
-    DirectXDevice* _dxdev, std::vector<std::shared_ptr<DirectBuffer>>& _buf,
-    ComPtr<dxc::IDxcBlob>& _kernel, ComPtr<ID3D12PipelineState>& _ps,
-    ComPtr<ID3D12RootSignature>& _sig, ComPtr<ID3D12DescriptorHeap>& _heap) {
-  ComPtr<ID3DBlob> _sig_blob;
-  ComPtr<ID3DBlob> _err_blob;
-
-  // create parameter desc from args
-  D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-  rtvHeapDesc.NumDescriptors = _buf.size();
-  rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-  // This flag is to make data allocated on GPU
-  rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-  ThrowIfFailed(_dxdev->_dev->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&_heap)));
-
-  UINT _inc_sz =
-      _dxdev->_dev->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-  auto _cpu_hnd = _heap->GetCPUDescriptorHandleForHeapStart();
-  // This will create UAV descriptor and Commited Resource on heap
-  // Heap{UAV}
-  for (size_t i = 0; i < _buf.size(); ++i) {
-    D3D12_UNORDERED_ACCESS_VIEW_DESC _uav_desc;
-    ZeroMemory(&_uav_desc, sizeof(_uav_desc));
-    _uav_desc.Format = DXGI_FORMAT_UNKNOWN;
-    _uav_desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-    _uav_desc.Buffer.FirstElement = 0;
-    _uav_desc.Buffer.NumElements = _buf[i]->size / (_buf[i]->type.bits / 8);
-    _uav_desc.Buffer.StructureByteStride = (UINT)(_buf[i]->type.bits / 8);
-    _dxdev->_dev->CreateUnorderedAccessView(_buf[i]->device().Get(), nullptr, &_uav_desc, _cpu_hnd);
-    _cpu_hnd.ptr += _inc_sz;
+/*static*/ DXGI_FORMAT GetDxgiFormatFromDmlTensorDataType(DLDataType dataType) {
+  switch (dataType.code) {
+    case DLDataTypeCode::kDLFloat:
+      return DXGI_FORMAT_R32_FLOAT;
+    case DLDataTypeCode::kDLInt:
+      return DXGI_FORMAT_R32_UINT;
+    default:
+      throw std::invalid_argument(_msg_("No DXGI_FORMAT exists for given data type."));
   }
-
-  // == Create Root Signature ==
-  // 1st, create descriptor range,
-  CD3DX12_DESCRIPTOR_RANGE1 _rg[1];
-  // UAV = Unordered Access View (could be buffers, textures, ...), support multithread access;
-  _rg[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, _buf.size(), 0, 0,
-              D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
-
-  // 2nd, create root parameter,
-  CD3DX12_ROOT_PARAMETER1 _rp[1];
-  _rp[0].InitAsDescriptorTable(_countof(_rg), _rg);
-  // 3rd, create root signature,
-  CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC _sig_desc;
-  ZeroMemory(&_sig_desc, sizeof(_sig_desc));
-  _sig_desc.Init_1_1(_countof(_rp), _rp);
-
-  // 4st, device create root signature,
-  ThrowIfFailed(D3DX12SerializeVersionedRootSignature(&_sig_desc, D3D_ROOT_SIGNATURE_VERSION_1_1,
-                                                      &_sig_blob, &_err_blob));
-  ThrowIfFailed(_dxdev->_dev->CreateRootSignature(0, _sig_blob->GetBufferPointer(),
-                                                  _sig_blob->GetBufferSize(), IID_PPV_ARGS(&_sig)));
-  // last, creat pipeline state.
-  // Computer pipeline state description contains: signature, kernel, etc ...
-  D3D12_COMPUTE_PIPELINE_STATE_DESC _cpsd;
-  ZeroMemory(&_cpsd, sizeof(_cpsd));
-  _cpsd.CS = CD3DX12_SHADER_BYTECODE(_kernel->GetBufferPointer(), _kernel->GetBufferSize());
-  _cpsd.pRootSignature = _sig.Get();
-  _cpsd.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
-  // Put description int computer pipeline state
-  ThrowIfFailed(_dxdev->_dev->CreateComputePipelineState(&_cpsd, IID_PPV_ARGS(&_ps)));
 }
 
-void DirectComputeKernel::binding_buffers(
-    DirectXDevice* _dxdev, ComPtr<ID3D12DescriptorHeap> _heap,
-    const std::unordered_map<std::string, DirectComputeKernel::BindPoint>& _bindpoints,
-    const std::vector<std::shared_ptr<DirectBuffer>>& _buf) {
-      /*
-  auto FillViewDesc = [&](auto& viewDesc, auto& bindPoint, auto& source) {
-    viewDesc.Buffer.StructureByteStride = bindPoint.structureByteStride;
-    viewDesc.Buffer.NumElements = source.elementCount;
-    viewDesc.Buffer.FirstElement = source.elementOffset;
-
-    if (bindPoint.viewType == BufferViewType::Typed) {
-      if (source.format) {
-        viewDesc.Format = *source.format;
-      } else {
-        // If the binding doesn't specify, assume the data type used to initialize the buffer.
-        viewDesc.Format =
-            Device::GetDxgiFormatFromDmlTensorDataType(sourceBufferDesc.initialValuesDataType);
-      }
-    } else if (bindPoint.viewType == BufferViewType::Structured) {
-      if (source.format && *source.format != DXGI_FORMAT_UNKNOWN) {
-        throw std::invalid_argument(fmt::format(
-            "'{}' is a structured buffer, so the format must be omitted or UNKNOWN.", targetName));
-      }
-      viewDesc.Format = DXGI_FORMAT_UNKNOWN;
-    } else if (bindPoint.viewType == BufferViewType::Raw) {
-      if (source.format && *source.format != DXGI_FORMAT_R32_TYPELESS) {
-        throw std::invalid_argument(fmt::format(
-            "'{}' is a raw buffer, so the format must be omitted or R32_TYPELESS.", targetName));
-      }
-
-      if (sourceBufferDesc.sizeInBytes % D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT != 0) {
-        throw std::invalid_argument(
-            fmt::format("Attempting to bind '{}' as a raw buffer, but its size ({} bytes) is not "
-                        "aligned to {} bytes",
-                        source.resourceDesc->name, sourceBufferDesc.sizeInBytes,
-                        D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT));
-      }
-
-      viewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-      if constexpr (std::is_same_v<decltype(viewDesc), D3D12_UNORDERED_ACCESS_VIEW_DESC&>) {
-        viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-      }
-      if constexpr (std::is_same_v<decltype(viewDesc), D3D12_SHADER_RESOURCE_VIEW_DESC&>) {
-        viewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
-      }
-    }
-  };
-  */
-
+void DirectComputeKernel::binding_buffers(DirectXDevice* _dxdev, ComPtr<ID3D12DescriptorHeap> _heap,
+                                          const std::vector<BindPoint>& _bindpoints,
+                                          const std::vector<std::shared_ptr<DirectBuffer>>& _buf) {
   uint32_t descriptorIncrementSize =
       _dxdev->_dev->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-  auto _cpu_hnd = _heap->GetCPUDescriptorHandleForHeapStart();
-  // This will create UAV descriptor and Commited Resource on heap
-  // Heap{UAV}
-  for (size_t i = 0; i < _buf.size(); ++i) {
-    D3D12_UNORDERED_ACCESS_VIEW_DESC _uav_desc;
-    ZeroMemory(&_uav_desc, sizeof(_uav_desc));
-    _uav_desc.Format = DXGI_FORMAT_UNKNOWN;
-    _uav_desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-    _uav_desc.Buffer.FirstElement = 0;
-    _uav_desc.Buffer.NumElements = _buf[i]->size / (_buf[i]->type.bits / 8);
-    _uav_desc.Buffer.StructureByteStride = (UINT)(_buf[i]->type.bits / 8);
-    _dxdev->_dev->CreateUnorderedAccessView(_buf[i]->device().Get(), nullptr, &_uav_desc, _cpu_hnd);
-    _cpu_hnd.ptr += descriptorIncrementSize;
-  }
 
-  /*
-  for (auto& binding : _bindpoints) {
-    auto& targetName = binding.first;
-    auto& sources = binding.second;
-    assert(sources.size() == 1);  // TODO: support multiple
-    auto& source = sources[0];
-
-    assert(source.resource != nullptr);
-    assert(source.resourceDesc != nullptr);
-
-    if (!std::holds_alternative<Model::BufferDesc>(source.resourceDesc->value)) {
-      throw std::invalid_argument("HLSL operators currently only support buffer bindings");
-    }
-    auto& sourceBufferDesc = std::get<Model::BufferDesc>(source.resourceDesc->value);
-
-    auto& bindPointIterator = m_bindPoints.find(targetName);
-    if (bindPointIterator == m_bindPoints.end()) {
-      throw std::invalid_argument(
-          fmt::format("Attempting to bind shader input '{}', which does not exist (or was "
-                      "optimized away) in the shader.",
-                      targetName));
-    }
-    auto& bindPoint = bindPointIterator->second;
-
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle{
-        m_descriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-        static_cast<int>(bindPoint.offsetInDescriptorsFromTableStart), descriptorIncrementSize};
+  for (auto& bindPoint : _bindpoints) {
+    auto offset = bindPoint.offsetInDescriptorsFromTableStart;
+    auto source = _buf[offset]->device();
+    auto FirstElement = 0;
+    auto StructureByteStride = bindPoint.structureByteStride;
+    auto NumElements = _buf[offset]->size / StructureByteStride;
+    auto SizeInBytes = _buf[offset]->size;
+    auto dt = _buf[offset]->type;
 
     auto FillViewDesc = [&](auto& viewDesc) {
-      viewDesc.Buffer.StructureByteStride = bindPoint.structureByteStride;
-      viewDesc.Buffer.NumElements = source.elementCount;
-      viewDesc.Buffer.FirstElement = source.elementOffset;
+      viewDesc.Buffer.StructureByteStride = StructureByteStride;
+      viewDesc.Buffer.NumElements = NumElements;
+      viewDesc.Buffer.FirstElement = FirstElement;
 
       if (bindPoint.viewType == BufferViewType::Typed) {
-        if (source.format) {
-          viewDesc.Format = *source.format;
-        } else {
-          // If the binding doesn't specify, assume the data type used to initialize the buffer.
-          viewDesc.Format =
-              Device::GetDxgiFormatFromDmlTensorDataType(sourceBufferDesc.initialValuesDataType);
-        }
+        viewDesc.Format =
+            GetDxgiFormatFromDmlTensorDataType(dt);
       } else if (bindPoint.viewType == BufferViewType::Structured) {
-        if (source.format && *source.format != DXGI_FORMAT_UNKNOWN) {
-          throw std::invalid_argument(
-              fmt::format("'{}' is a structured buffer, so the format must be omitted or UNKNOWN.",
-                          targetName));
-        }
         viewDesc.Format = DXGI_FORMAT_UNKNOWN;
       } else if (bindPoint.viewType == BufferViewType::Raw) {
-        if (source.format && *source.format != DXGI_FORMAT_R32_TYPELESS) {
-          throw std::invalid_argument(fmt::format(
-              "'{}' is a raw buffer, so the format must be omitted or R32_TYPELESS.", targetName));
-        }
-
-        if (sourceBufferDesc.sizeInBytes % D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT != 0) {
-          throw std::invalid_argument(
-              fmt::format("Attempting to bind '{}' as a raw buffer, but its size ({} bytes) is not "
-                          "aligned to {} bytes",
-                          source.resourceDesc->name, sourceBufferDesc.sizeInBytes,
-                          D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT));
-        }
-
         viewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
         if constexpr (std::is_same_v<decltype(viewDesc), D3D12_UNORDERED_ACCESS_VIEW_DESC&>) {
           viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
@@ -348,37 +192,38 @@ void DirectComputeKernel::binding_buffers(
       }
     };
 
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle{
+        _heap->GetCPUDescriptorHandleForHeapStart(),
+        static_cast<int>(bindPoint.offsetInDescriptorsFromTableStart), descriptorIncrementSize};
+
     if (bindPoint.descriptorType == D3D12_DESCRIPTOR_RANGE_TYPE_UAV) {
       D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
       uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
       FillViewDesc(uavDesc);
-      uavDesc.Buffer.CounterOffsetInBytes = source.counterOffsetBytes;
-      m_device->D3D()->CreateUnorderedAccessView(source.resource, source.counterResource, &uavDesc,
-                                                 cpuHandle);
+      // todo(wenxh): To support counter resource
+      _dxdev->_dev->CreateUnorderedAccessView(source.Get(), nullptr, &uavDesc, cpuHandle);
     } else if (bindPoint.descriptorType == D3D12_DESCRIPTOR_RANGE_TYPE_SRV) {
       D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
       srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
       srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
       FillViewDesc(srvDesc);
-      m_device->D3D()->CreateShaderResourceView(source.resource, &srvDesc, cpuHandle);
+      _dxdev->_dev->CreateShaderResourceView(source.Get(), &srvDesc, cpuHandle);
     } else if (bindPoint.descriptorType == D3D12_DESCRIPTOR_RANGE_TYPE_CBV) {
-      if (sourceBufferDesc.sizeInBytes % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT != 0) {
-        throw std::invalid_argument(
-            fmt::format("Attempting to bind '{}' as a constant buffer, but its size ({} bytes) is "
-                        "not aligned to {} bytes",
-                        source.resourceDesc->name, sourceBufferDesc.sizeInBytes,
-                        D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
+      if (SizeInBytes % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT != 0) {
+        throw std::invalid_argument(_msg_(
+            "Attempting to bind " + bindPoint.descName + " as a constant buffer, but its size (" +
+            std::to_string(SizeInBytes) + " bytes) is not aligned to " +
+            std::to_string(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT) + " bytes"));
       }
 
       D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-      cbvDesc.BufferLocation = source.resource->GetGPUVirtualAddress();
-      cbvDesc.SizeInBytes = sourceBufferDesc.sizeInBytes;
-      m_device->D3D()->CreateConstantBufferView(&cbvDesc, cpuHandle);
+      cbvDesc.BufferLocation = source.Get()->GetGPUVirtualAddress();
+      cbvDesc.SizeInBytes = SizeInBytes;
+      _dxdev->_dev->CreateConstantBufferView(&cbvDesc, cpuHandle);
     } else {
       throw std::invalid_argument("Unexpected binding type");
     }
   }
-  */
 }
 
 void DirectComputeKernel::device_dispatch(DirectXDevice* _dxdev,
