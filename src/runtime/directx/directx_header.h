@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <vector>
 #include <regex>
+#include <type_traits>
 
 // Thirdparty
 #include "dlpack/dlpack.h"

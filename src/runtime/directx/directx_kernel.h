@@ -75,7 +75,7 @@ class DirectComputeKernel {
   using BindingData = std::tuple<std::vector<D3D12_DESCRIPTOR_RANGE1>,
                                  std::vector<BindPoint>>;
 
-  void CreateRootSignatureAndBindingMap(ComPtr<ID3D12ShaderReflection> _reflection,
+  void CreateRootSignatureAndBindingMap(ComPtr<ID3D12ShaderReflection>& _reflection,
                                         std::vector<BindPoint>& _bindpoints,
                                         ComPtr<ID3DBlob>& rootSignatureBlob);
   BindingData ReflectBindingData(std::vector<D3D12_SHADER_INPUT_BIND_DESC> shaderInputDescs);
@@ -102,7 +102,7 @@ class DirectComputeKernel {
   // todo(wenxh): Support DXIL&DXC later;
   void dxc_compile(ComPtr<dxc::IDxcBlob>& entry_blob,
                    ComPtr<ID3D12ShaderReflection>& reflection_blob, const std::string& src,
-                   std::string entry_point, std::string profile = "cs_6_2");
+                   std::string entry_point, std::string profile = "cs_6_0");
 };
 
 }  // namespace dx

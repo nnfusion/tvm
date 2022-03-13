@@ -1,9 +1,10 @@
 #include "directx_shader_compiler.h"
 
 #ifdef _WIN32
-#include <windows.h>
-#include <d3d12.h>
 #include <atlbase.h>
+#include <d3d12.h>
+#include <windows.h>
+
 #include "dxc\Support\d3dx12.h"
 using namespace ATL;
 #endif
@@ -33,13 +34,14 @@ long check_dxil(void* buffer, bool must_signed) {
     has_digest |= header->hash_digest[3] != 0x0;
     if (has_header && (has_digest || !must_signed)) return 0;
     return E_INVALIDARG;
-  } catch(std::exception e) {
+  } catch (std::exception e) {
     return E_ACCESSDENIED;
   }
 }
 
 // Based on https://github.com/microsoft/DirectXShaderCompiler/wiki/Using-dxc.exe-and-dxcompiler.dll
-void dxc_compile(const std::string& src, std::string entry_point, std::string profile, void** pshader, void** preflection) {
+void dxc_compile(const std::string& src, std::string entry_point, std::string profile,
+                 void** pshader, void** preflection) {
   std::wstring w_entry_point(entry_point.begin(), entry_point.end());
   std::wstring w_profile(profile.begin(), profile.end());
   std::wstring w_file_name = w_entry_point + L"_kernel.hlsl";
@@ -84,14 +86,14 @@ void dxc_compile(const std::string& src, std::string entry_point, std::string pr
 
   CComPtr<IDxcBlob> pReflectionData;
   pResults->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&pReflectionData), nullptr);
-  if (pReflectionData != nullptr)
-  {
+  if (pReflectionData != nullptr) {
     DxcBuffer ReflectionData;
-    ReflectionData.Encoding = DXC_CP_ACP;
+    ReflectionData.Encoding = CP_ACP;
     ReflectionData.Ptr = pReflectionData->GetBufferPointer();
     ReflectionData.Size = pReflectionData->GetBufferSize();
-   
+
     pUtils->CreateReflection(&ReflectionData, __uuidof(ID3D12ShaderReflection), preflection);
+    if (*preflection == nullptr) throw std::runtime_error("Compilation Failed\n");
   }
 }
 }  // namespace dxc
