@@ -6,7 +6,9 @@
 #include <list>
 #include <memory>
 #include <sstream>
+#include <unordered_map>
 #include <vector>
+#include <regex>
 
 // Thirdparty
 #include "dlpack/dlpack.h"
@@ -22,6 +24,7 @@
 #include "directx/dxcore.h"
 #include "directx/dxcore_interface.h"
 #include "dxguids/dxguids.h"
+#include "directx_d3d12shader.h"
 
 #ifndef _countof
 #define _countof(a) (sizeof(a) / sizeof(*(a)))
@@ -138,10 +141,13 @@ class com_exception : public std::exception {
   std::string file, line;
 };
 
-#define ThrowIfFailed(hr)                                                     \
+#define ThrowIfFailed(expr)                                                   \
+{                                                                             \
+  HRESULT hr = expr;                                                          \
   if (FAILED(hr)) {                                                           \
     throw com_exception(hr, std::string(__FILE__), std::to_string(__LINE__)); \
-  }
+  }                                                                           \
+}
 }  // namespace DirectX
 
 using namespace Microsoft::WRL;

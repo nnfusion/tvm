@@ -11,6 +11,8 @@ using namespace ATL;
 #include <stdexcept>
 #include "dxc/dxcapi.h"
 
+CROSS_PLATFORM_UUIDOF(ID3D12ShaderReflection, "5A58797D-A72C-478D-8BA2-EFC6B0EFE88E");
+
 namespace tvm {
 namespace runtime {
 namespace dx {
@@ -37,7 +39,7 @@ long check_dxil(void* buffer, bool must_signed) {
 }
 
 // Based on https://github.com/microsoft/DirectXShaderCompiler/wiki/Using-dxc.exe-and-dxcompiler.dll
-void dxc_compile(const std::string& src, std::string entry_point, std::string profile, void** pshader) {
+void dxc_compile(const std::string& src, std::string entry_point, std::string profile, void** pshader, void** preflection) {
   std::wstring w_entry_point(entry_point.begin(), entry_point.end());
   std::wstring w_profile(profile.begin(), profile.end());
   std::wstring w_file_name = w_entry_point + L"_kernel.hlsl";
@@ -79,6 +81,17 @@ void dxc_compile(const std::string& src, std::string entry_point, std::string pr
 
   // Retrieve shader
   pResults->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), pshader, nullptr);
+
+  CComPtr<IDxcBlob> pReflectionData;
+  pResults->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&pReflectionData), nullptr);
+  if (pReflectionData != nullptr)
+  {
+    DxcBuffer ReflectionData;
+    ReflectionData.Encoding = DXC_CP_ACP;
+    ReflectionData.Ptr = pReflectionData->GetBufferPointer();
+   
+    pUtils->CreateReflection(&ReflectionData, __uuidof(ID3D12ShaderReflection), preflection);
+  }
 }
 }  // namespace dxc
 }  // namespace dx

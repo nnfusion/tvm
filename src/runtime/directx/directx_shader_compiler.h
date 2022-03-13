@@ -18,7 +18,7 @@ struct DxilMinimalHeader {
 
 long check_dxil(void* buffer, bool must_signed = false);
 
-void dxc_compile(const std::string& src, std::string entry_point, std::string profile, void** pshader);
+void dxc_compile(const std::string& src, std::string entry_point, std::string profile, void** pshader, void** preflection);
 
 }  // namespace dxc
 }  // namespace dx
