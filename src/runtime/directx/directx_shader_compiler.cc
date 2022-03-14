@@ -92,6 +92,7 @@ void dxc_compile(const std::string& src, std::string entry_point, std::string pr
     ReflectionData.Ptr = pReflectionData->GetBufferPointer();
     ReflectionData.Size = pReflectionData->GetBufferSize();
 
+    *preflection = nullptr;
     pUtils->CreateReflection(&ReflectionData, __uuidof(ID3D12ShaderReflection), preflection);
     if (*preflection == nullptr) throw std::runtime_error("Compilation Failed\n");
   }
