@@ -13,7 +13,7 @@ class DirectXContext {
  public:
   void update_devices() {
     // Enable experimental features on device:
-    //  - Such as running dxil without signed, which need Windows be in Developer mode
+    //  - Such as running dxil without signed, which needs Windows being in Developer mode
     //  - URL: https://github.com/microsoft/DirectXShaderCompiler/wiki/Running-Shaders
     ThrowIfFailed(
         D3D12EnableExperimentalFeatures(1, &D3D12ExperimentalShaderModels, nullptr, nullptr));
