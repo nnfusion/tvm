@@ -92,6 +92,15 @@ void dxc_compile(const std::string& src, std::string entry_point, std::string pr
     ReflectionData.Ptr = pReflectionData->GetBufferPointer();
     ReflectionData.Size = pReflectionData->GetBufferSize();
 
+    // Check 'STAT' header for reflection
+    char* stat = "STAT";
+    bool correct_stat = true;
+    for(int i=0;i<4;i++)
+    {
+      if(((char*)ReflectionData.Ptr)[i]!=stat[i])
+        throw std::runtime_error("Incorrect reflection blob.\n");
+    }
+
     *preflection = nullptr;
     pUtils->CreateReflection(&ReflectionData, __uuidof(ID3D12ShaderReflection), preflection);
     if (*preflection == nullptr) throw std::runtime_error("Compilation Failed\n");
