@@ -177,8 +177,7 @@ void DirectComputeKernel::binding_buffers(DirectXDevice* _dxdev, ComPtr<ID3D12De
       viewDesc.Buffer.FirstElement = FirstElement;
 
       if (bindPoint.viewType == BufferViewType::Typed) {
-        viewDesc.Format =
-            GetDxgiFormatFromDmlTensorDataType(dt);
+        viewDesc.Format = GetDxgiFormatFromDmlTensorDataType(dt);
       } else if (bindPoint.viewType == BufferViewType::Structured) {
         viewDesc.Format = DXGI_FORMAT_UNKNOWN;
       } else if (bindPoint.viewType == BufferViewType::Raw) {
@@ -260,15 +259,14 @@ void DirectComputeKernel::device_dispatch(DirectXDevice* _dxdev,
     ThrowIfFailed(_dxdev->_dev->CreateComputePipelineState(
         &psoDesc, IID_PPV_ARGS(function.pipeline_state.ReleaseAndGetAddressOf())));
   }
-  if (function.heap == nullptr) {
-    ComPtr<ID3D12DescriptorHeap> descriptorHeap;
-    D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
-    descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    descriptorHeapDesc.NumDescriptors = static_cast<uint32_t>(this->_bindpoints.size());
-    descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    ThrowIfFailed(_dxdev->_dev->CreateDescriptorHeap(
-        &descriptorHeapDesc, IID_PPV_ARGS(function.heap.ReleaseAndGetAddressOf())));
-  }
+
+  ComPtr<ID3D12DescriptorHeap> descriptorHeap;
+  D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
+  descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+  descriptorHeapDesc.NumDescriptors = static_cast<uint32_t>(this->_bindpoints.size());
+  descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+  ThrowIfFailed(_dxdev->_dev->CreateDescriptorHeap(
+      &descriptorHeapDesc, IID_PPV_ARGS(function.heap.ReleaseAndGetAddressOf())));
 
   binding_buffers(_dxdev, function.heap, this->_bindpoints, _buf);
 
