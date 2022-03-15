@@ -1,7 +1,6 @@
 #pragma once
 
 #include "directx_header.h"
-#include "d3d12sdklayers.h"
 
 namespace tvm {
 namespace runtime {
@@ -13,6 +12,12 @@ namespace dx {
 class DirectXContext {
  public:
   void update_devices() {
+    // Enable experimental features on device:
+    //  - Such as running dxil without signed, which needs Windows being in Developer mode
+    //  - URL: https://github.com/microsoft/DirectXShaderCompiler/wiki/Running-Shaders
+    ThrowIfFailed(
+        D3D12EnableExperimentalFeatures(1, &D3D12ExperimentalShaderModels, nullptr, nullptr));
+
     _devices.clear();
     // Get all qualified devices;
     ComPtr<IDXCoreAdapterFactory> d3d_adapter_factory;
@@ -32,10 +37,8 @@ class DirectXContext {
         auto pdxdev = std::make_unique<DirectXDevice>(d3d_adapter, _devices.size());
         _devices.push_back(std::move(pdxdev));
       } catch (com_exception e) {
-        if (e.get_result() == DXGI_ERROR_UNSUPPORTED)
-          LOG(INFO) << "DirectX Adapter #" << i << " not supported: cannot create device.";
-        else
-          throw e;
+        LOG(INFO) << "DirectX Adapter #" << i << " not supported: cannot create device.";
+        throw e;
       }
     }
   }
@@ -65,7 +68,7 @@ class DirectXContext {
 
  public:
   DirectXContext() {
-    //enable_debug_layer();
+    // enable_debug_layer();
     update_devices();
   }
 };

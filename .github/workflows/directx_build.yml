@@ -10,8 +10,9 @@ env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
   VCPKG_EXE_PATH: F:\tool\vcpkg\vcpkg.exe
-  VCPKG_CMAKE_PATH: "F:/tool/vcpkg/scripts/buildsystems/vcpkg.cmake"
+  VCPKG_CMAKE_PATH: F:\tool\vcpkg\scripts\buildsystems\vcpkg.cmake
   VSDEVCMD: C:/\"Program Files\"/\"Microsoft Visual Studio\"/2022/Enterprise/Common7/Tools/VsDevCmd.bat
+  DXC_PATH: F:\Tool\dxc
 
 jobs:
   build:
@@ -29,24 +30,29 @@ jobs:
       shell: cmd
       run: ${{env.VCPKG_EXE_PATH}} install gtest:x64-windows
       
+    - name: VCPKG install DirectX-Headers
+      shell: cmd
+      run: ${{env.VCPKG_EXE_PATH}} install DirectX-Headers:x64-windows
+      
     - name: Configure CMake
       shell: cmd
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >-
         ${{env.VSDEVCMD}} && 
-        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_DIRECTX=ON -DCMAKE_TOOLCHAIN_FILE=${{env.VCPKG_CMAKE_PATH}}
+        cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_DIRECTX=ON -DCMAKE_TOOLCHAIN_FILE=${{env.VCPKG_CMAKE_PATH}} -DDIRECTX_SHADER_COMPILER=${{env.DXC_PATH}}
 
     - name: Build
       shell: cmd
       # Build your program with the given configuration
       run: >-
         ${{env.VSDEVCMD}} && 
-        cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+        cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
       
     - name: Test
       shell: cmd
       # Build your program with the given configuration
       run: >-
         ${{env.VSDEVCMD}} && 
-        ${{github.workspace}}/build/${{env.BUILD_TYPE}}/dx_test.exe
+        copy ${{env.DXC_PATH}}\bin\dxcompiler.dll ${{github.workspace}}\build\${{env.BUILD_TYPE}}\ &&
+        ${{github.workspace}}\build\${{env.BUILD_TYPE}}\dx_test.exe

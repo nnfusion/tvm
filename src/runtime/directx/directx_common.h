@@ -44,6 +44,7 @@
 #include "../source_utils.h"
 #include "../thread_storage_scope.h"
 #include "../workspace_pool.h"
+
 #include "directx_header.h"
 #include "directx_module.h"
 #include "directx_workspace.h"

@@ -6,28 +6,36 @@
 #include <list>
 #include <memory>
 #include <sstream>
+#include <unordered_map>
 #include <vector>
+#include <regex>
+#include <type_traits>
 
-// Necessary headers for directx api:
-// - Those from DirectX-Headers, which is for wsl/win32.
-// #define INITGUID // This is to init all GUID in dxguids.h, use it in one place
-
-#ifdef DX_WSL
+// Thirdparty
+#include "dlpack/dlpack.h"
+#include "dmlc/json.h"
+// Adapter for non-windows
+#ifndef _WIN32
 #include "wsl/winadapter.h"
-#include "wsl/wrladapter.h"
-#else
-#include <wrl/client.h>
 #endif
 
 #include "directx/d3d12.h"
+#include "directx/d3d12sdklayers.h"
 #include "directx/d3dx12.h"
 #include "directx/dxcore.h"
 #include "directx/dxcore_interface.h"
-#include "dmlc/json.h"
 #include "dxguids/dxguids.h"
+#include "directx_d3d12shader.h"
 
-#ifndef DX_WSL
-#include <d3dcompiler.h>
+#ifndef _countof
+#define _countof(a) (sizeof(a) / sizeof(*(a)))
+#endif
+
+#ifndef ZeroMemory
+#define ZeroMemory(Destination, Length) memset((Destination), 0, (Length))
+#endif
+
+#ifdef _WIN32
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxcore.lib")
 #pragma comment(lib, "d3dcompiler.lib")
@@ -42,14 +50,26 @@
 #endif  // !DISALLOW_COPY_AND_ASSIGN
 
 #ifndef _msg_
-#define _msg_(arg)                                                                                 \
-  (std::string(__FILE__) + std::string(":") + std::to_string(__LINE__) + std::string(" throw message - ") + \
-   std::string(arg))
+#define _msg_(arg)                                                       \
+  (std::string(__FILE__) + std::string(":") + std::to_string(__LINE__) + \
+   std::string(" throw message - ") + std::string(arg))
 #endif
 
 // Coding style here is mixed of windows, std c++ and linux
 // Becasue some interface of DirectX need windows api/DS,
 // and for cross-platform compatiblity we need stl and so on..
+
+#ifndef DXGI_ERROR_NOT_FOUND
+#define DXGI_ERROR_NOT_FOUND 0x887A0002
+#endif
+
+#ifndef DXGI_ERROR_MORE_DATA
+#define DXGI_ERROR_MORE_DATA 0x887A0003
+#endif
+
+#ifndef DXGI_ERROR_UNSUPPORTED
+#define DXGI_ERROR_UNSUPPORTED 0x887A0004
+#endif
 
 namespace DirectX {
 inline const char* GetErrorString(HRESULT error) {
@@ -122,13 +142,13 @@ class com_exception : public std::exception {
   std::string file, line;
 };
 
-// Helper utility converts D3D API failures into exceptions.
-inline void ThrowIfFailed(HRESULT hr) noexcept(false) {
-  if (FAILED(hr)) {
-    throw com_exception(hr, std::string(__FILE__), std::to_string(__LINE__));
-  }
+#define ThrowIfFailed(expr)                                                   \
+{                                                                             \
+  HRESULT hr = expr;                                                          \
+  if (FAILED(hr)) {                                                           \
+    throw com_exception(hr, std::string(__FILE__), std::to_string(__LINE__)); \
+  }                                                                           \
 }
-
 }  // namespace DirectX
 
 using namespace Microsoft::WRL;
@@ -142,6 +162,28 @@ using ID3DComputerShader = ID3DBlob;
 class DirectComputeKernel;
 class DirectXDevice;
 class DirectXContext;
+
+namespace dxc {
+struct IUnknown {
+  IUnknown() : m_count(0){};
+  virtual HRESULT QueryInterface(REFIID riid, void** ppvObject) = 0;
+  virtual ULONG AddRef();
+  virtual ULONG Release();
+// todo(wenxh): Hacked code for alignment of virtual functions
+#ifndef _WIN32
+  virtual ~IUnknown();
+#endif
+
+ private:
+  std::atomic<unsigned long> m_count;
+};
+// IDxcBlob is an alias of ID3D10Blob and ID3DBlob
+struct IDxcBlob : public IUnknown {
+ public:
+  virtual LPVOID STDMETHODCALLTYPE GetBufferPointer(void) = 0;
+  virtual SIZE_T STDMETHODCALLTYPE GetBufferSize(void) = 0;
+};
+}  // namespace dxc
 
 }  // namespace dx
 }  // namespace runtime
