@@ -56,6 +56,3 @@ jobs:
         ${{env.VSDEVCMD}} && 
         copy ${{env.DXC_PATH}}\bin\dxcompiler.dll ${{github.workspace}}\build\${{env.BUILD_TYPE}}\ &&
         ${{github.workspace}}\build\${{env.BUILD_TYPE}}\dx_test.exe
-        
-    - name: Clean Workspace
-      uses: AutoModality/action-clean@v1.1.0
