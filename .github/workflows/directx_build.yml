@@ -12,6 +12,7 @@ env:
   VCPKG_EXE_PATH: F:\tool\vcpkg\vcpkg.exe
   VCPKG_CMAKE_PATH: "F:/tool/vcpkg/scripts/buildsystems/vcpkg.cmake"
   VSDEVCMD: C:/\"Program Files\"/\"Microsoft Visual Studio\"/2022/Enterprise/Common7/Tools/VsDevCmd.bat
+  DXC_PATH: F:/Tool/dxc
 
 jobs:
   build:
@@ -40,6 +41,7 @@ jobs:
       run: >-
         ${{env.VSDEVCMD}} && 
         cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_DIRECTX=ON -DCMAKE_TOOLCHAIN_FILE=${{env.VCPKG_CMAKE_PATH}}
+         -DDIRECTX_SHADER_COMPILER=${env.DXC_PATH}
 
     - name: Build
       shell: cmd
@@ -53,4 +55,5 @@ jobs:
       # Build your program with the given configuration
       run: >-
         ${{env.VSDEVCMD}} && 
+        set PATH=%PATH%;${env.DXC_PATH}/bin &&
         ${{github.workspace}}/build/${{env.BUILD_TYPE}}/dx_test.exe
