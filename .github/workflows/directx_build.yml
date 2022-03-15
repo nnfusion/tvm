@@ -22,10 +22,6 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
 
     steps:
-    - name: clean workspace
-      shell: cmd
-      run: rmdir /s/q ${{github.workspace}} && md ${{github.workspace}}
-
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
@@ -60,8 +56,6 @@ jobs:
         ${{env.VSDEVCMD}} && 
         set PATH=%PATH%;${env.DXC_PATH}/bin &&
         ${{github.workspace}}/build/${{env.BUILD_TYPE}}/dx_test.exe
-
-    - name: clean workspace after
-      shell: cmd
-      run: rmdir /s/q ${{github.workspace}} && md ${{github.workspace}}
-
+        
+    - name: Clean Workspace
+      uses: AutoModality/action-clean@v1.1.0
