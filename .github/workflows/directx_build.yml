@@ -43,8 +43,7 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >-
         ${{env.VSDEVCMD}} && 
-        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_DIRECTX=ON -DCMAKE_TOOLCHAIN_FILE=${{env.VCPKG_CMAKE_PATH}}
-         -DDIRECTX_SHADER_COMPILER=${env.DXC_PATH}
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_DIRECTX=ON -DCMAKE_TOOLCHAIN_FILE=${{env.VCPKG_CMAKE_PATH}} -DDIRECTX_SHADER_COMPILER=${env.DXC_PATH}
 
     - name: Build
       shell: cmd
