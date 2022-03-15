@@ -23,6 +23,7 @@ jobs:
 
     steps:
     - name: clean workspace
+      shell: cmd
       run: rmdir /s/q ${{github.workspace}} && md ${{github.workspace}}
 
     - uses: actions/checkout@v2
@@ -61,5 +62,6 @@ jobs:
         ${{github.workspace}}/build/${{env.BUILD_TYPE}}/dx_test.exe
 
     - name: clean workspace after
+      shell: cmd
       run: rmdir /s/q ${{github.workspace}} && md ${{github.workspace}}
 
