@@ -106,7 +106,7 @@ DirectComputeKernel::BindingData DirectComputeKernel::ReflectBindingData(
 }
 
 void DirectComputeKernel::CreateRootSignatureAndBindingMap(
-    ComPtr<ID3D12ShaderReflection>& _reflection, std::vector<BindPoint>& _bindpoints,
+    ComPtr<dxc::ID3D12ShaderReflection>& _reflection, std::vector<BindPoint>& _bindpoints,
     ComPtr<ID3DBlob>& rootSignatureBlob) {
   D3D12_SHADER_DESC shaderDesc = {};
   ThrowIfFailed(_reflection->GetDesc(&shaderDesc));
@@ -325,7 +325,7 @@ ComPtr<dxc::IDxcBlob> DirectComputeKernel::dxc_compile_with_threads(const std::s
 }
 
 void DirectComputeKernel::dxc_compile(ComPtr<dxc::IDxcBlob>& entry_blob,
-                                      ComPtr<ID3D12ShaderReflection>& reflection_blob,
+                                      ComPtr<dxc::ID3D12ShaderReflection>& reflection_blob,
                                       const std::string& src, std::string entry_point,
                                       std::string profile) {
   dxc::dxc_compile(src, entry_point, profile, (void**)(entry_blob.ReleaseAndGetAddressOf()),

@@ -177,11 +177,58 @@ struct IUnknown {
  private:
   std::atomic<unsigned long> m_count;
 };
+
 // IDxcBlob is an alias of ID3D10Blob and ID3DBlob
 struct IDxcBlob : public IUnknown {
  public:
   virtual LPVOID STDMETHODCALLTYPE GetBufferPointer(void) = 0;
   virtual SIZE_T STDMETHODCALLTYPE GetBufferSize(void) = 0;
+};
+
+DECLARE_INTERFACE_(ID3D12ShaderReflection, IUnknown)
+{
+  STDMETHOD(QueryInterface)(THIS_ _In_ REFIID iid,
+                           _Out_ LPVOID *ppv) PURE;
+  STDMETHOD_(ULONG, AddRef)(THIS) PURE;
+  STDMETHOD_(ULONG, Release)(THIS) PURE;
+
+  STDMETHOD(GetDesc)(THIS_ _Out_ D3D12_SHADER_DESC *pDesc) PURE;
+
+  STDMETHOD_(ID3D12ShaderReflectionConstantBuffer*, GetConstantBufferByIndex)(THIS_ _In_ UINT Index) PURE;
+  STDMETHOD_(ID3D12ShaderReflectionConstantBuffer*, GetConstantBufferByName)(THIS_ _In_ LPCSTR Name) PURE;
+
+  STDMETHOD(GetResourceBindingDesc)(THIS_ _In_ UINT ResourceIndex,
+                                    _Out_ D3D12_SHADER_INPUT_BIND_DESC *pDesc) PURE;
+
+  STDMETHOD(GetInputParameterDesc)(THIS_ _In_ UINT ParameterIndex,
+                                   _Out_ D3D12_SIGNATURE_PARAMETER_DESC *pDesc) PURE;
+  STDMETHOD(GetOutputParameterDesc)(THIS_ _In_ UINT ParameterIndex,
+                                    _Out_ D3D12_SIGNATURE_PARAMETER_DESC *pDesc) PURE;
+  STDMETHOD(GetPatchConstantParameterDesc)(THIS_ _In_ UINT ParameterIndex,
+                                          _Out_ D3D12_SIGNATURE_PARAMETER_DESC *pDesc) PURE;
+
+  STDMETHOD_(ID3D12ShaderReflectionVariable*, GetVariableByName)(THIS_ _In_ LPCSTR Name) PURE;
+
+  STDMETHOD(GetResourceBindingDescByName)(THIS_ _In_ LPCSTR Name,
+                                         _Out_ D3D12_SHADER_INPUT_BIND_DESC *pDesc) PURE;
+
+  STDMETHOD_(UINT, GetMovInstructionCount)(THIS) PURE;
+  STDMETHOD_(UINT, GetMovcInstructionCount)(THIS) PURE;
+  STDMETHOD_(UINT, GetConversionInstructionCount)(THIS) PURE;
+  STDMETHOD_(UINT, GetBitwiseInstructionCount)(THIS) PURE;
+
+  STDMETHOD_(D3D_PRIMITIVE, GetGSInputPrimitive)(THIS) PURE;
+  STDMETHOD_(BOOL, IsSampleFrequencyShader)(THIS) PURE;
+
+  STDMETHOD_(UINT, GetNumInterfaceSlots)(THIS) PURE;
+  STDMETHOD(GetMinFeatureLevel)(THIS_ _Out_ enum D3D_FEATURE_LEVEL* pLevel) PURE;
+
+  STDMETHOD_(UINT, GetThreadGroupSize)(THIS_
+                                      _Out_opt_ UINT* pSizeX,
+                                      _Out_opt_ UINT* pSizeY,
+                                      _Out_opt_ UINT* pSizeZ) PURE;
+
+  STDMETHOD_(UINT64, GetRequiresFlags)(THIS) PURE;
 };
 }  // namespace dxc
 
