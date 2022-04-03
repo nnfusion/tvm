@@ -18,7 +18,7 @@ jobs:
       
     - name: git clone tvm
       run: 
-        git clone https://${{ secrets.PAT }}@github.com/nnfusion/tvm.git ${{github.workspace}}
+        git clone https://${{ secrets.PAT }}@github.com/wenxcs/dx-tvm.git ${{github.workspace}}
     
     - name: update tvm main
       working-directory: ${{github.workspace}}
