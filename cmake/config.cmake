@@ -73,6 +73,9 @@ set(USE_OPENCL OFF)
 # Whether enable Metal runtime
 set(USE_METAL OFF)
 
+# Whether enable DirectX runtime
+set(USE_DIRECTX OFF)
+
 # Whether enable Vulkan runtime
 #
 # Possible values:
@@ -110,7 +113,7 @@ set(USE_IOS_RPC OFF)
 # Whether embed stackvm into the runtime
 set(USE_STACKVM_RUNTIME OFF)
 
-# Whether enable tiny embedded graph executor.
+# Whether enable tiny embedded graph executor.  
 set(USE_GRAPH_EXECUTOR ON)
 
 # Whether enable tiny graph executor with CUDA Graph
